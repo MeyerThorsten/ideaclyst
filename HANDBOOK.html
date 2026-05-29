@@ -369,7 +369,7 @@
           <div class="body" style="border-top:3px solid var(--ember)">
             <span class="who" style="color:var(--ember)"><i class="swatch" style="width:10px;height:10px;background:var(--ember)"></i> Surfagent · Web research</span>
             <h4>Market research</h4>
-            <p>Before the council deliberates, headless Chrome scouts the web for the idea's market and competitors and writes a research memo that grounds every later step. Best-effort: if Chrome is missing or a search is blocked it falls back to offline synthesis — the run never fails.</p>
+            <p>Before the council deliberates, headless Chrome scouts the web for the idea's market and competitors and writes a research memo that grounds every later step. Best-effort: if Chrome is missing or a search is blocked it falls back to offline synthesis — the run never fails. Can be toggled off per run in the idea form.</p>
             <div class="sees"><b>Sees:</b> <span class="tag brief">idea brief</span> <span class="tag">+ live web</span></div>
           </div>
         </div>
@@ -641,6 +641,21 @@ cat .ideaclyst/runs/<span class="v">&lt;runId&gt;</span>/FINAL_PLAN.md</pre>
         <tr><td><code>IDEACLYST_CODEX_MODEL</code></td><td><span class="def">empty</span></td><td>Concrete Codex model, or defer to <code>~/.codex/config.toml</code></td></tr>
         <tr><td><code>IDEACLYST_AGENT_TIMEOUT_MS</code></td><td><code>180000</code></td><td>Per-agent-call timeout</td></tr>
         <tr><td><code>IDEACLYST_DATA_DIR</code></td><td><code>.ideaclyst</code></td><td>Where runs are stored</td></tr>
+      </table>
+      <h3>Research &amp; discovery</h3>
+      <p>All best-effort; the live path needs a Chrome/Chromium install. Research follows the agent mode unless overridden.</p>
+      <table class="tbl">
+        <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_MODE</code></td><td><span class="def">follows agent mode</span></td><td><code>mock</code> or <code>live</code> override</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_ENGINE</code></td><td><code>duckduckgo</code></td><td><code>duckduckgo</code> · <code>bing</code> · <code>google</code></td></tr>
+        <tr><td><code>IDEACLYST_CHROME_BIN</code></td><td><span class="def">auto-detected</span></td><td>Chrome/Chromium path override</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_USER_AGENT</code></td><td><span class="def">desktop Chrome UA</span></td><td>UA override (avoids headless bot challenges)</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_CDP_PORT</code></td><td><code>9222</code></td><td>Headless Chrome debug port</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_TIMEOUT_MS</code></td><td><code>20000</code></td><td>Per-page recon timeout</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_BUDGET_MS</code></td><td><code>60000</code></td><td>Whole research / scout step budget</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_MAX_RESULTS</code></td><td><code>6</code></td><td>Search results parsed per query</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_MAX_SOURCES</code></td><td><code>3</code></td><td>Pages deep-reconned</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_IDLE_MS</code></td><td><code>120000</code></td><td>Reap idle headless Chrome after</td></tr>
       </table>
     </section>
 

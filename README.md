@@ -363,6 +363,24 @@ src/
 | `IDEACLYST_AGENT_TIMEOUT_MS` | `180000` | Per-agent-call timeout |
 | `IDEACLYST_DATA_DIR` | `.ideaclyst` | Where runs are stored |
 
+**Research & discovery** (all best-effort; the live path needs a Chrome/Chromium install):
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `IDEACLYST_RESEARCH_MODE` | _(follows agent mode)_ | `mock` or `live` override |
+| `IDEACLYST_RESEARCH_ENGINE` | `duckduckgo` | `duckduckgo` (default) · `bing` · `google` |
+| `IDEACLYST_CHROME_BIN` | _(auto-detected)_ | Chrome/Chromium path override |
+| `IDEACLYST_RESEARCH_USER_AGENT` | _(desktop Chrome UA)_ | UA override (avoids headless bot challenges) |
+| `IDEACLYST_RESEARCH_CDP_PORT` | `9222` | Headless Chrome debug port |
+| `IDEACLYST_RESEARCH_TIMEOUT_MS` | `20000` | Per-page recon timeout |
+| `IDEACLYST_RESEARCH_BUDGET_MS` | `60000` | Whole research/scout step budget |
+| `IDEACLYST_RESEARCH_MAX_RESULTS` | `6` | Search results parsed per query |
+| `IDEACLYST_RESEARCH_MAX_SOURCES` | `3` | Pages deep-reconned |
+| `IDEACLYST_RESEARCH_IDLE_MS` | `120000` | Reap idle headless Chrome after |
+
+Web research (Step 0) can also be **toggled off per run** in the idea form — handy when you
+just want the council without scouting.
+
 ---
 
 ## Scripts
