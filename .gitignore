@@ -32,3 +32,6 @@ next-env.d.ts
 # marketing site (deployed to ideaclyst.com, kept out of the app repo)
 /site/
 /ideaclyst-site.zip
+
+# local-only docs (not pushed)
+/docs/codex-review-prompt.md

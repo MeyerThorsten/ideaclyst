@@ -6,11 +6,29 @@
  * in-memory state, so progress survives a server restart.
  */
 
-import { mkdir, readFile, writeFile, readdir, stat } from "node:fs/promises";
+import { mkdir, readFile, writeFile, readdir, stat, rename, access } from "node:fs/promises";
 import { join } from "node:path";
 
 import { Run, RunOutputs, CreateRunInput, emptyOutputs } from "./types";
 import { makeRunId } from "../utils";
+
+/** Write atomically: write to a temp file in the same dir, then rename over the
+ * target. A crash mid-write leaves the previous file intact (rename is atomic on
+ * the same filesystem), so the source-of-truth JSON can never be truncated. */
+async function writeFileAtomic(path: string, contents: string): Promise<void> {
+  const tmp = `${path}.tmp-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
+  await writeFile(tmp, contents, "utf8");
+  await rename(tmp, path);
+}
+
+async function pathExists(p: string): Promise<boolean> {
+  try {
+    await access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function dataDir(): string {
   return process.env.IDEACLYST_DATA_DIR || ".ideaclyst";
@@ -35,17 +53,21 @@ export async function writeRunFile(
   contents: string,
 ): Promise<void> {
   await mkdir(runDir(runId), { recursive: true });
-  await writeFile(join(runDir(runId), filename), contents, "utf8");
+  await writeFileAtomic(join(runDir(runId), filename), contents);
 }
 
 async function persist(run: Run): Promise<void> {
   await mkdir(runDir(run.id), { recursive: true });
-  await writeFile(runJsonPath(run.id), JSON.stringify(run, null, 2), "utf8");
+  await writeFileAtomic(runJsonPath(run.id), JSON.stringify(run, null, 2));
 }
 
 export async function createRun(input: CreateRunInput): Promise<Run> {
   const now = new Date().toISOString();
-  const id = makeRunId(input.title);
+  // Collision-resistant id; never reuse an existing run directory.
+  let id = makeRunId(input.title);
+  for (let i = 0; i < 5 && (await pathExists(runJsonPath(id))); i++) {
+    id = makeRunId(input.title);
+  }
   const run: Run = {
     id,
     title: input.title.trim(),
@@ -86,10 +108,20 @@ export async function createRun(input: CreateRunInput): Promise<Run> {
 }
 
 export async function getRun(runId: string): Promise<Run | null> {
+  let raw: string;
   try {
-    const raw = await readFile(runJsonPath(runId), "utf8");
+    raw = await readFile(runJsonPath(runId), "utf8");
+  } catch (err) {
+    // Distinguish a genuinely missing run from a read error (logged, not silent).
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+      console.error(`[ideaclyst] failed to read run ${runId}:`, err);
+    }
+    return null;
+  }
+  try {
     return JSON.parse(raw) as Run;
-  } catch {
+  } catch (err) {
+    console.error(`[ideaclyst] corrupted run.json for ${runId} (treating as missing):`, err);
     return null;
   }
 }

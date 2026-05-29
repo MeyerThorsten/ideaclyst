@@ -7,6 +7,7 @@
 
 import { ensureChrome, releaseChrome } from "./chrome";
 import { reconUrl } from "./recon";
+import { isSafePublicUrl } from "./url-safety";
 
 export interface WebSearchResult {
   title: string;
@@ -46,9 +47,9 @@ function unwrap(href: string): string | null {
 }
 
 function isResultLink(url: string): boolean {
+  if (!isSafePublicUrl(url)) return false; // SSRF guard: only public http(s) targets
   try {
     const u = new URL(url);
-    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
     return !ENGINE_HOSTS.some((h) => u.hostname === h || u.hostname.endsWith("." + h));
   } catch {
     return false;
