@@ -1,13 +1,21 @@
 /**
- * Claude Code CLI backend. Spawns the local `claude` binary in headless/print
- * mode (`claude -p`) with the prompt piped on stdin, and returns its stdout.
+ * Claude Code CLI backend. Runs the local `claude` binary as a one-shot
+ * completion WITHOUT the `-p`/`--print` flag.
  *
- * Uses array args + stdin (no shell) so prompts can't break escaping or inject
- * shell syntax. Authentication is whatever the local `claude` session already
- * has — IdeaClyst never handles credentials.
+ * How non-interactive output is achieved without `-p`: when `claude`'s stdout is
+ * not a TTY (here it's a pipe), the CLI runs non-interactively and prints a
+ * single response, then exits — so piping the prompt on stdin and capturing
+ * stdout yields the completion. We additionally pass `--tools ""` so the run is
+ * a pure text completion (no agentic file operations).
+ *
+ * Each call runs inside the idea's own directory (`cwd`), so every run gets an
+ * isolated working directory. Array args + stdin (no shell) avoid escaping /
+ * injection. Authentication is whatever the local `claude` session already has —
+ * IdeaClyst never handles credentials.
  */
 
 import { spawn } from "node:child_process";
+import { mkdir } from "node:fs/promises";
 
 function claudeBin(): string {
   return process.env.IDEACLYST_CLAUDE_BIN || "claude";
@@ -17,17 +25,27 @@ function timeoutMs(): number {
   return Number(process.env.IDEACLYST_AGENT_TIMEOUT_MS) || 180_000;
 }
 
-const NOT_AVAILABLE =
-  "set IDEACLYST_AGENT_MODE=mock to use mock outputs.";
+const NOT_AVAILABLE = "set IDEACLYST_AGENT_MODE=mock to use mock outputs.";
 
-export async function runClaude(prompt: string): Promise<string> {
+/**
+ * @param prompt The full prompt to send on stdin.
+ * @param cwd    The idea's own working directory to run `claude` in.
+ */
+export async function runClaude(prompt: string, cwd: string): Promise<string> {
   const bin = claudeBin();
-  // `-p` = print mode (non-interactive); `--output-format text` keeps stdout
-  // as plain text. Prompt is delivered on stdin to avoid argv length/escaping.
-  const args = ["-p", "--output-format", "text"];
+  await mkdir(cwd, { recursive: true });
+
+  // No `-p`: piped (non-TTY) stdout already makes claude non-interactive.
+  // `--tools ""` keeps this a pure text completion (no file/agent actions).
+  const args = ["--tools", ""];
+  const model = process.env.IDEACLYST_CLAUDE_MODEL;
+  if (model && model.toLowerCase() !== "default") {
+    args.push("--model", model);
+  }
 
   return new Promise<string>((resolve, reject) => {
     const child = spawn(bin, args, {
+      cwd,
       env: process.env,
       stdio: ["pipe", "pipe", "pipe"],
     });

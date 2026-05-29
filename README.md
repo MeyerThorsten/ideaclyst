@@ -52,8 +52,10 @@ claude --version          # Claude Code CLI on PATH
 codex login status        # Codex CLI logged in (ChatGPT session)
 ```
 
-The agent layer (`src/lib/agents/`) is the only mode-aware code: it spawns
-`claude -p` and `codex exec` with array args (no shell) and a per-call timeout.
+The agent layer (`src/lib/agents/`) is the only mode-aware code. It runs the
+`claude` CLI (no `-p` — piped, non-TTY stdout makes it non-interactive; `--tools ""`
+keeps it a pure completion) inside each idea's own run directory, and `codex exec`
+in an ephemeral temp dir. Both use array args (no shell) and a per-call timeout.
 If a CLI is missing or fails, the run is marked failed with a clear message
 pointing you back to mock mode.
 
@@ -63,6 +65,7 @@ pointing you back to mock mode.
 |-----|---------|---------|
 | `IDEACLYST_AGENT_MODE` | `mock` | `mock` or `cli` |
 | `IDEACLYST_CLAUDE_BIN` | `claude` | Claude CLI binary/path |
+| `IDEACLYST_CLAUDE_MODEL` | _(empty)_ | Concrete Claude model (e.g. `opus`, `sonnet`), or defer to the CLI default |
 | `IDEACLYST_CODEX_BIN` | `codex` | Codex CLI binary/path |
 | `IDEACLYST_CODEX_MODEL` | _(empty)_ | Concrete Codex model, or defer to `~/.codex/config.toml` |
 | `IDEACLYST_AGENT_TIMEOUT_MS` | `180000` | Per-agent-call timeout |

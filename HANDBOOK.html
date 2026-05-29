@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IdeaClyst — Field Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper: #f3ede1;
+    --paper-2: #ece4d4;
+    --card: #fbf7ee;
+    --ink: #20190f;
+    --ink-soft: #4a4034;
+    --muted: #8a7d6b;
+    --line: #d8cdb8;
+    --line-strong: #c4b69b;
+    --ember: #d6451f;       /* the catalyst spark */
+    --ember-soft: #f0b8a4;
+    --claude: #b8542f;      /* terracotta */
+    --claude-bg: #f6e3d8;
+    --codex: #2f6f5e;       /* pine */
+    --codex-bg: #dcebe3;
+    --gold: #9a7a1e;
+    --shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 18px 40px -24px rgba(40,28,12,.5);
+    --display: "Fraunces", Georgia, serif;
+    --body: "Newsreader", Georgia, serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 2rem; }
+  body {
+    margin: 0;
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(circle at 0% 0%, rgba(214,69,31,.05), transparent 40%),
+      radial-gradient(circle at 100% 10%, rgba(47,111,94,.05), transparent 45%);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* fine grain texture overlay */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    opacity: .035; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  a { color: var(--ember); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+  /* ---------- Layout ---------- */
+  .wrap { display: grid; grid-template-columns: 280px 1fr; max-width: 1280px; margin: 0 auto; }
+
+  /* ---------- Sidebar ---------- */
+  aside {
+    position: sticky; top: 0; align-self: start; height: 100vh;
+    padding: 2.4rem 1.6rem 2rem 2rem; border-right: 1px solid var(--line);
+    overflow-y: auto;
+  }
+  .brand { font-family: var(--display); font-weight: 900; font-size: 1.5rem; letter-spacing: -.02em; line-height: 1; }
+  .brand .clyst { color: var(--ember); }
+  .brand-sub { font-family: var(--mono); font-size: .62rem; letter-spacing: .28em; text-transform: uppercase; color: var(--muted); margin-top: .55rem; }
+  nav.toc { margin-top: 2.2rem; font-size: .9rem; }
+  nav.toc .grp { font-family: var(--mono); font-size: .6rem; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin: 1.6rem 0 .6rem; }
+  nav.toc a {
+    display: block; color: var(--ink-soft); text-decoration: none; padding: .28rem 0 .28rem .9rem;
+    border-left: 2px solid transparent; transition: all .18s ease; line-height: 1.35;
+  }
+  nav.toc a:hover { color: var(--ink); border-left-color: var(--line-strong); }
+  nav.toc a.active { color: var(--ember); border-left-color: var(--ember); font-weight: 500; }
+
+  /* ---------- Main ---------- */
+  main { padding: 0 clamp(1.5rem, 4vw, 4.5rem) 8rem; min-width: 0; }
+
+  /* hero */
+  header.hero { padding: 5.5rem 0 3.5rem; border-bottom: 1px solid var(--line); position: relative; }
+  .eyebrow { font-family: var(--mono); font-size: .68rem; letter-spacing: .3em; text-transform: uppercase; color: var(--ember); display: flex; align-items: center; gap: .8rem; }
+  .eyebrow::after { content: ""; height: 1px; flex: 1; background: linear-gradient(90deg, var(--ember-soft), transparent); }
+  h1.title { font-family: var(--display); font-weight: 900; font-size: clamp(3.4rem, 8vw, 6rem); line-height: .92; letter-spacing: -.035em; margin: 1.4rem 0 0; }
+  h1.title .clyst { color: var(--ember); position: relative; }
+  .lede { font-size: clamp(1.25rem, 2.4vw, 1.7rem); line-height: 1.4; max-width: 38ch; margin-top: 1.6rem; color: var(--ink-soft); font-weight: 400; }
+  .lede em { font-style: italic; color: var(--ink); }
+  .meta-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 2.2rem; }
+  .chip { font-family: var(--mono); font-size: .72rem; letter-spacing: .04em; padding: .42rem .8rem; border: 1px solid var(--line-strong); border-radius: 100px; color: var(--ink-soft); background: var(--card); }
+  .chip b { color: var(--ember); font-weight: 700; }
+
+  /* sections */
+  section { padding-top: 4.5rem; }
+  h2 { font-family: var(--display); font-weight: 600; font-size: clamp(1.9rem, 3.6vw, 2.7rem); letter-spacing: -.02em; line-height: 1.05; margin: 0 0 .4rem; scroll-margin-top: 1.5rem; }
+  h2 .num { font-family: var(--mono); font-size: .85rem; font-weight: 500; color: var(--ember); letter-spacing: .1em; vertical-align: super; margin-right: .7rem; }
+  h3 { font-family: var(--display); font-weight: 600; font-size: 1.4rem; letter-spacing: -.01em; margin: 2.6rem 0 .6rem; }
+  .section-rule { height: 1px; background: var(--line); margin: 1.2rem 0 1.8rem; }
+  p { margin: 0 0 1.1rem; max-width: 68ch; }
+  strong { font-weight: 600; }
+  code:not(pre code) { font-family: var(--mono); font-size: .82em; background: var(--paper-2); border: 1px solid var(--line); border-radius: 5px; padding: .08em .4em; color: var(--ink); }
+
+  /* callout */
+  .note { display: grid; grid-template-columns: auto 1fr; gap: 1rem; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--ember); border-radius: 10px; padding: 1.1rem 1.3rem; margin: 1.6rem 0; box-shadow: var(--shadow); }
+  .note.warn { border-left-color: var(--gold); }
+  .note .ic { font-family: var(--display); font-weight: 900; font-size: 1.3rem; color: var(--ember); line-height: 1; }
+  .note.warn .ic { color: var(--gold); }
+  .note p { margin: 0; font-size: .95rem; max-width: none; }
+  .note p + p { margin-top: .5rem; }
+
+  /* cards grid */
+  .grid { display: grid; gap: 1rem; margin: 1.8rem 0; }
+  .grid.two { grid-template-columns: 1fr 1fr; }
+  .grid.three { grid-template-columns: repeat(3, 1fr); }
+  .feature { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.4rem 1.4rem 1.5rem; box-shadow: var(--shadow); transition: transform .2s ease, box-shadow .2s ease; }
+  .feature:hover { transform: translateY(-3px); box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 26px 50px -28px rgba(40,28,12,.55); }
+  .feature .k { font-family: var(--mono); font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; color: var(--ember); }
+  .feature h4 { font-family: var(--display); font-weight: 600; font-size: 1.15rem; margin: .5rem 0 .5rem; letter-spacing: -.01em; }
+  .feature p { font-size: .93rem; margin: 0; color: var(--ink-soft); }
+
+  /* code block */
+  pre { background: #211a10; color: #ece2cf; border-radius: 12px; padding: 1.3rem 1.4rem; overflow-x: auto; font-family: var(--mono); font-size: .82rem; line-height: 1.7; margin: 1.4rem 0; border: 1px solid #34291a; box-shadow: 0 20px 40px -28px rgba(0,0,0,.6); }
+  pre .c { color: #7f7560; font-style: italic; }
+  pre .t { color: #e0904f; }
+  pre .s { color: #9bbf8a; }
+  pre .v { color: #d9c98a; }
+
+  /* council flow timeline */
+  .flow { margin: 2rem 0 1rem; position: relative; }
+  .flow::before { content: ""; position: absolute; left: 27px; top: 18px; bottom: 18px; width: 2px; background: repeating-linear-gradient(180deg, var(--line-strong) 0 6px, transparent 6px 12px); }
+  .step { display: grid; grid-template-columns: 56px 1fr; gap: 1.2rem; margin-bottom: 1.1rem; position: relative; }
+  .step .dot { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-weight: 900; font-size: 1.4rem; color: #fff; box-shadow: 0 8px 18px -8px rgba(40,28,12,.6); z-index: 1; }
+  .dot.claude { background: var(--claude); }
+  .dot.codex { background: var(--codex); }
+  .step .body { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem 1.3rem; box-shadow: var(--shadow); }
+  .step.claude .body { border-top: 3px solid var(--claude); }
+  .step.codex .body { border-top: 3px solid var(--codex); }
+  .step .who { font-family: var(--mono); font-size: .64rem; letter-spacing: .18em; text-transform: uppercase; display: inline-flex; align-items: center; gap: .5rem; }
+  .step.claude .who { color: var(--claude); }
+  .step.codex .who { color: var(--codex); }
+  .step h4 { font-family: var(--display); font-weight: 600; font-size: 1.25rem; margin: .35rem 0 .5rem; letter-spacing: -.01em; }
+  .step p { font-size: .93rem; margin: 0 0 .7rem; color: var(--ink-soft); }
+  .sees { font-family: var(--mono); font-size: .72rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+  .sees b { color: var(--ink-soft); }
+  .tag { background: var(--paper-2); border: 1px solid var(--line); border-radius: 6px; padding: .12rem .5rem; color: var(--ink-soft); }
+  .tag.claude { background: var(--claude-bg); border-color: var(--claude); color: var(--claude); }
+  .tag.codex { background: var(--codex-bg); border-color: var(--codex); color: var(--codex); }
+  .tag.brief { background: #efe7d4; border-color: var(--line-strong); color: var(--gold); }
+
+  /* legend */
+  .legend { display: flex; gap: 1.6rem; flex-wrap: wrap; font-family: var(--mono); font-size: .76rem; margin: .4rem 0 1.6rem; }
+  .legend span { display: inline-flex; align-items: center; gap: .5rem; color: var(--ink-soft); }
+  .swatch { width: 14px; height: 14px; border-radius: 4px; }
+  .swatch.claude { background: var(--claude); }
+  .swatch.codex { background: var(--codex); }
+
+  /* table */
+  .tbl { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: .9rem; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .tbl th { text-align: left; font-family: var(--mono); font-size: .64rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding: .85rem 1.1rem; background: var(--paper-2); border-bottom: 1px solid var(--line); }
+  .tbl td { padding: .8rem 1.1rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl td code { white-space: nowrap; }
+  .tbl .def { font-family: var(--mono); font-size: .76rem; color: var(--ember); }
+
+  /* file tree */
+  .tree { font-family: var(--mono); font-size: .8rem; line-height: 1.85; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.4rem 1.6rem; box-shadow: var(--shadow); overflow-x: auto; }
+  .tree .d { color: var(--ember); font-weight: 700; }
+  .tree .cmt { color: var(--muted); }
+
+  /* endpoint */
+  .ep { display: flex; align-items: center; gap: .8rem; font-family: var(--mono); font-size: .88rem; margin: 1.4rem 0 .3rem; }
+  .verb { font-weight: 700; padding: .2rem .65rem; border-radius: 6px; font-size: .72rem; letter-spacing: .06em; }
+  .verb.get { background: var(--codex-bg); color: var(--codex); }
+  .verb.post { background: var(--claude-bg); color: var(--claude); }
+
+  footer { margin-top: 6rem; padding-top: 2rem; border-top: 1px solid var(--line); font-family: var(--mono); font-size: .74rem; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+
+  /* mobile */
+  .menu-btn { display: none; }
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: 1fr; }
+    aside { position: fixed; z-index: 50; top: 0; left: 0; width: 280px; background: var(--paper); transform: translateX(-105%); transition: transform .25s ease; box-shadow: 0 0 60px rgba(0,0,0,.2); }
+    aside.open { transform: translateX(0); }
+    .menu-btn { display: grid; place-items: center; position: fixed; z-index: 60; top: 1rem; right: 1rem; width: 46px; height: 46px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--card); font-size: 1.2rem; cursor: pointer; box-shadow: var(--shadow); }
+    .grid.two, .grid.three { grid-template-columns: 1fr; }
+    main { padding-left: 1.3rem; padding-right: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+
+<div class="wrap">
+  <!-- ============ SIDEBAR ============ -->
+  <aside id="sidebar">
+    <div class="brand">Idea<span class="clyst">Clyst</span></div>
+    <div class="brand-sub">Field Manual · v0.1</div>
+    <nav class="toc" id="toc">
+      <div class="grp">Orientation</div>
+      <a href="#overview">What it is</a>
+      <a href="#features">Features at a glance</a>
+      <a href="#architecture">Architecture</a>
+      <div class="grp">The Mechanism</div>
+      <a href="#council">The 5-step council</a>
+      <a href="#lifecycle">Request lifecycle</a>
+      <a href="#modes">Mock vs. CLI mode</a>
+      <a href="#cli-calls">How CLI calls work</a>
+      <div class="grp">Reference</div>
+      <a href="#data">Data model &amp; storage</a>
+      <a href="#api">API reference</a>
+      <a href="#files">File map</a>
+      <a href="#config">Configuration</a>
+      <div class="grp">Operations</div>
+      <a href="#running">Running it</a>
+      <a href="#limits">Limits &amp; troubleshooting</a>
+    </nav>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+    <header class="hero">
+      <div class="eyebrow">Founder Planning Instrument</div>
+      <h1 class="title">Idea<span class="clyst">Clyst</span></h1>
+      <p class="lede">Catalyze rough ideas into <em>buildable SaaS plans</em> — by sitting Claude and Codex on the same council.</p>
+      <div class="meta-row">
+        <span class="chip">Next.js <b>16</b></span>
+        <span class="chip">React <b>19</b></span>
+        <span class="chip">Local-first</span>
+        <span class="chip">Port <b>5417</b></span>
+        <span class="chip">No DB · No auth</span>
+      </div>
+    </header>
+
+    <!-- OVERVIEW -->
+    <section id="overview">
+      <h2><span class="num">01</span>What it is</h2>
+      <div class="section-rule"></div>
+      <p>IdeaClyst is a <strong>local-first Next.js app</strong> that turns one rough product idea into a complete <strong>founder planning packet</strong>. It does this not with a single prompt, but by orchestrating a structured <strong>council</strong> — a five-step deliberation between two AI command-line tools that take opposing roles and critique each other before reaching a verdict.</p>
+      <p>Think of it as a tiny boardroom: a <strong style="color:var(--claude)">skeptical SaaS founder</strong> (Claude) and a <strong style="color:var(--codex)">pragmatic CTO</strong> (Codex) argue your idea into shape. The output is split into Summary, MVP Backlog, Risks, Validation Tests, and ready-to-paste Next Prompts.</p>
+      <div class="note">
+        <div class="ic">✦</div>
+        <div>
+          <p><strong>The whole app is built around one idea:</strong> two different models, taking adversarial roles and reading each other's work, produce a sharper plan than either alone. Everything else — the disk store, the polling UI, the mode switch — exists to serve that deliberation.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features">
+      <h2><span class="num">02</span>Features at a glance</h2>
+      <div class="section-rule"></div>
+      <div class="grid three">
+        <div class="feature"><div class="k">Core</div><h4>Dual-agent council</h4><p>Five alternating steps between Claude and Codex, each agent reading prior outputs and critiquing the other.</p></div>
+        <div class="feature"><div class="k">Demo-ready</div><h4>Mock mode by default</h4><p>Realistic, idea-aware output with zero CLIs installed. Flip one env var for the real thing.</p></div>
+        <div class="feature"><div class="k">Live</div><h4>Progressive results</h4><p>Each step's output appears the instant it completes — the run page polls disk every 1.5s.</p></div>
+        <div class="feature"><div class="k">Durable</div><h4>Disk is the truth</h4><p>Every run persists as <code>run.json</code> + Markdown files. A server restart never loses a result.</p></div>
+        <div class="feature"><div class="k">Structured</div><h4>Tabbed packet</h4><p>The final plan auto-splits into Summary, MVP Backlog, Risks, Validation Tests &amp; Next Prompts.</p></div>
+        <div class="feature"><div class="k">Safe</div><h4>No-shell, sandboxed</h4><p>CLIs spawn with array args + stdin (no injection); Codex runs read-only in a throwaway temp dir.</p></div>
+        <div class="feature"><div class="k">Resilient</div><h4>Graceful failure</h4><p>A missing or failing CLI marks the run failed with a clear message — completed steps survive.</p></div>
+        <div class="feature"><div class="k">Portable</div><h4>Markdown artifacts</h4><p>Each run also writes human-readable <code>.md</code> files you can read or share outside the app.</p></div>
+        <div class="feature"><div class="k">Zero creds</div><h4>No secrets handled</h4><p>IdeaClyst never touches API keys — both CLIs authenticate via their own local sessions.</p></div>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture">
+      <h2><span class="num">03</span>Architecture</h2>
+      <div class="section-rule"></div>
+      <p>IdeaClyst has four layers, and the design discipline is that only <em>one</em> of them knows whether you're in mock or real-CLI mode.</p>
+      <div class="grid two">
+        <div class="feature"><div class="k">Layer 1 · UI</div><h4>App Router pages</h4><p>Home, idea form (<code>/new</code>), sessions list (<code>/runs</code>), and a live run detail page that polls. Pure client rendering + fetch.</p></div>
+        <div class="feature"><div class="k">Layer 2 · API</div><h4>Route handlers</h4><p><code>/api/runs</code> creates a run and fires the council; <code>/api/runs/[id]</code> returns one run for polling.</p></div>
+        <div class="feature"><div class="k">Layer 3 · Orchestrator</div><h4>The 5-step pipeline</h4><p><code>orchestrator.ts</code> sequences the council, persisting after every step. It calls <code>runAgent()</code> and never learns which backend ran.</p></div>
+        <div class="feature"><div class="k">Layer 4 · Agents + Store</div><h4>The mode seam &amp; disk</h4><p><code>agents/</code> is the only mode-aware code; <code>runs/store.ts</code> reads &amp; writes the on-disk source of truth.</p></div>
+      </div>
+      <pre><span class="c">// the only branch that knows the mode — agents/index.ts</span>
+<span class="t">export async function</span> runAgent(agent, prompt, ctx) {
+  <span class="t">if</span> (agentMode() === <span class="s">"mock"</span>)
+    <span class="t">return</span> runMock(ctx.run, ctx.stepKey);   <span class="c">// ignores prompt, uses structured run</span>
+  <span class="t">return</span> agent === <span class="s">"claude"</span>
+    ? runClaude(prompt, runDir)            <span class="c">// real `claude` (no -p), in run dir</span>
+    : runCodex(prompt);                    <span class="c">// real `codex exec`</span>
+}</pre>
+    </section>
+
+    <!-- COUNCIL -->
+    <section id="council">
+      <h2><span class="num">04</span>The 5-step council</h2>
+      <div class="section-rule"></div>
+      <p>This is the heart of the app. The two agents alternate, and the crucial detail is in the <strong>"sees"</strong> line of each step — every agent reads specific prior outputs, which is what makes it a deliberation rather than five isolated prompts.</p>
+      <div class="legend">
+        <span><i class="swatch claude"></i> Claude — skeptical SaaS founder</span>
+        <span><i class="swatch codex"></i> Codex — pragmatic CTO</span>
+      </div>
+
+      <div class="flow">
+        <div class="step claude">
+          <div class="dot claude">1</div>
+          <div class="body">
+            <span class="who"><i class="swatch claude" style="width:10px;height:10px"></i> Claude · Product Strategist</span>
+            <h4>Product strategy</h4>
+            <p>Pressure-tests the idea into a credible strategy: the core problem &amp; who feels it most, the sharpest wedge, target customer &amp; willingness to pay, differentiation, go-to-market, and the riskiest assumptions.</p>
+            <div class="sees"><b>Sees:</b> <span class="tag brief">idea brief</span></div>
+          </div>
+        </div>
+
+        <div class="step codex">
+          <div class="dot codex">2</div>
+          <div class="body">
+            <span class="who"><i class="swatch codex" style="width:10px;height:10px"></i> Codex · Pragmatic CTO</span>
+            <h4>Technical architecture</h4>
+            <p>Designs a lean, buildable MVP architecture: recommended stack &amp; why, data model, key services, third-party APIs, build risks, and a rough build order. Flags anything technically naive in the strategy.</p>
+            <div class="sees"><b>Sees:</b> <span class="tag brief">idea brief</span> <span class="tag claude">+ Step 1 strategy</span></div>
+          </div>
+        </div>
+
+        <div class="step claude">
+          <div class="dot claude">3</div>
+          <div class="body">
+            <span class="who"><i class="swatch claude" style="width:10px;height:10px"></i> Claude · Critique</span>
+            <h4>Critiques the architecture</h4>
+            <p>Back as the skeptical founder — attacks the CTO's plan from a product/shipping lens: Is it over-engineered for an MVP? Does it serve the wedge? What gets cut to ship in weeks, not months?</p>
+            <div class="sees"><b>Sees:</b> <span class="tag brief">idea brief</span> <span class="tag codex">+ Step 2 architecture</span></div>
+          </div>
+        </div>
+
+        <div class="step codex">
+          <div class="dot codex">4</div>
+          <div class="body">
+            <span class="who"><i class="swatch codex" style="width:10px;height:10px"></i> Codex · Critique</span>
+            <h4>Critiques the strategy</h4>
+            <p>The CTO returns fire on the strategy from an engineering-reality lens: which assumptions are technically expensive or infeasible for an MVP? Where does go-to-market imply scope the team can't deliver fast?</p>
+            <div class="sees"><b>Sees:</b> <span class="tag brief">idea brief</span> <span class="tag claude">+ Step 1 strategy</span></div>
+          </div>
+        </div>
+
+        <div class="step claude">
+          <div class="dot claude">5</div>
+          <div class="body">
+            <span class="who"><i class="swatch claude" style="width:10px;height:10px"></i> Claude · Synthesizer</span>
+            <h4>Final synthesis</h4>
+            <p>Reconciles everything into one decisive packet, resolving disagreements with a clear recommendation. Outputs exact <code>##</code> headings: Summary, MVP Backlog, Risks, Validation Tests, Next Prompts.</p>
+            <div class="sees"><b>Sees:</b> <span class="tag brief">brief</span> <span class="tag claude">S1</span> <span class="tag codex">S2</span> <span class="tag claude">S3</span> <span class="tag codex">S4</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <div class="ic">↔</div>
+        <div><p><strong>The cross-exchange is the point.</strong> Codex builds on Claude's strategy (step 2), then each critiques the <em>other's</em> domain (steps 3 &amp; 4), and Claude reconciles all four into a verdict (step 5). After every step the orchestrator rewrites <code>run.json</code> and a Markdown file, so the UI reveals outputs one at a time.</p></div>
+      </div>
+    </section>
+
+    <!-- LIFECYCLE -->
+    <section id="lifecycle">
+      <h2><span class="num">05</span>Request lifecycle</h2>
+      <div class="section-rule"></div>
+      <p>From the moment you hit submit, here is the exact path — note that the server responds <em>before</em> the council finishes:</p>
+      <table class="tbl">
+        <tr><th style="width:48px">#</th><th>Stage</th><th>What happens</th></tr>
+        <tr><td>1</td><td><b>Submit</b></td><td>The <code>/new</code> form <code>POST</code>s the idea brief to <code>/api/runs</code>.</td></tr>
+        <tr><td>2</td><td><b>Validate &amp; create</b></td><td>Title required, idea ≥ 10 chars, goal must be valid. A <code>queued</code> run is written to disk (<code>run.json</code> + <code>IDEA.md</code>).</td></tr>
+        <tr><td>3</td><td><b>Fire &amp; forget</b></td><td>Server calls <code>void startRun(id)</code> <strong>without awaiting</strong> and returns <code>{ runId }</code> with a 201 immediately.</td></tr>
+        <tr><td>4</td><td><b>Redirect</b></td><td>Client navigates to <code>/runs/[runId]</code>.</td></tr>
+        <tr><td>5</td><td><b>Poll</b></td><td>The run page fetches <code>GET /api/runs/[runId]</code> every <strong>1.5s</strong>, re-rendering as outputs fill in.</td></tr>
+        <tr><td>6</td><td><b>Deliberate</b></td><td>In the background, the orchestrator runs steps 1→5, rewriting <code>run.json</code> after each.</td></tr>
+        <tr><td>7</td><td><b>Complete</b></td><td>Step 5 is split into tabs, status becomes <code>completed</code> (or <code>failed</code>), and polling stops.</td></tr>
+      </table>
+      <pre><span class="c">// api/runs/route.ts — the fire-and-forget hand-off</span>
+<span class="t">const</span> run = <span class="t">await</span> createRun(input);
+<span class="t">void</span> startRun(run.id);              <span class="c">// NOT awaited — runs in background</span>
+<span class="t">return</span> NextResponse.json({ runId: run.id }, { status: <span class="v">201</span> });</pre>
+    </section>
+
+    <!-- MODES -->
+    <section id="modes">
+      <h2><span class="num">06</span>Mock vs. CLI mode</h2>
+      <div class="section-rule"></div>
+      <p>One environment variable, <code>IDEACLYST_AGENT_MODE</code>, selects the backend. The orchestrator and UI are identical in both modes — only <code>agents/</code> behaves differently.</p>
+      <table class="tbl">
+        <tr><th>Aspect</th><th>Mock <span class="def">(default)</span></th><th>CLI</th></tr>
+        <tr><td><b>Set with</b></td><td><code>IDEACLYST_AGENT_MODE=mock</code></td><td><code>IDEACLYST_AGENT_MODE=cli</code></td></tr>
+        <tr><td><b>Needs CLIs?</b></td><td>No — runs instantly offline</td><td>Yes — <code>claude</code> &amp; <code>codex</code> installed + logged in</td></tr>
+        <tr><td><b>Driven by</b></td><td>Structured run + step key (prompt ignored)</td><td>The generated prompt (run/step ignored)</td></tr>
+        <tr><td><b>Output</b></td><td>Deterministic, idea-aware Markdown</td><td>Real model output</td></tr>
+        <tr><td><b>Use for</b></td><td>Demos, UI work, offline dev</td><td>Real planning packets</td></tr>
+      </table>
+      <div class="note warn">
+        <div class="ic">!</div>
+        <div><p><strong>CLI mode prerequisites.</strong> Both binaries must be on PATH and authenticated: <code>claude --version</code> and <code>codex login status</code>. IdeaClyst never handles credentials — it relies entirely on each CLI's own local session.</p></div>
+      </div>
+    </section>
+
+    <!-- CLI CALLS -->
+    <section id="cli-calls">
+      <h2><span class="num">07</span>How CLI calls work</h2>
+      <div class="section-rule"></div>
+      <p>In CLI mode each council step spawns a real process. Both backends use <strong>array args + stdin</strong> (never a shell string), so a prompt can't break escaping or inject shell syntax, and both enforce a per-call timeout (default 180s).</p>
+
+      <h3 style="color:var(--claude)">Claude backend</h3>
+      <p><strong>No <code>-p</code> / <code>--print</code>.</strong> When <code>claude</code>'s stdout is not a TTY (here it's a pipe), the CLI runs non-interactively and prints a single response, then exits. So IdeaClyst just pipes the prompt on stdin and reads stdout — no print flag needed. <code>--tools ""</code> keeps it a pure text completion (no agentic file actions), and it runs inside the <strong>idea's own run directory</strong> (spawn <code>cwd</code>):</p>
+      <pre><span class="c">// agents/claude.ts — runs in the run's own directory</span>
+claude --tools ""                  <span class="c">// prompt on stdin, stdout piped (non-TTY)</span>
+       [--model <span class="v">&lt;model&gt;</span>]            <span class="c">// optional IDEACLYST_CLAUDE_MODEL</span></pre>
+      <p>Returns trimmed stdout. A missing binary (<code>ENOENT</code>), non-zero exit with no output, or empty output each reject with a clear "fall back to mock mode" message.</p>
+      <div class="note">
+        <div class="ic">✦</div>
+        <div><p><strong>Why no <code>-p</code>?</strong> The CLI's clean non-interactive behavior is triggered by a non-TTY stdout, not solely by the print flag — so dropping <code>-p</code> (and the <code>-p</code>-only <code>--output-format</code>) still yields a one-shot completion. Each idea runs in its own directory, mirroring how Codex is isolated.</p></div>
+      </div>
+
+      <h3 style="color:var(--codex)">Codex backend</h3>
+      <p>Runs Codex non-interactively, <strong>read-only</strong>, inside a throwaway temp working directory so it can't touch your filesystem — we only want the text completion:</p>
+      <pre><span class="c">// agents/codex.ts</span>
+codex exec --json --skip-git-repo-check --ephemeral \
+  -s read-only --color never \
+  -C <span class="v">&lt;temp-dir&gt;</span> -o <span class="v">last-message.txt</span> -    <span class="c">// prompt on stdin</span></pre>
+      <p>The clean final message is read from the <code>-o</code> output file; the <code>--json</code> event stream is parsed as a fallback (and to surface a clean API error). The temp dir is always removed afterward. An optional <code>IDEACLYST_CODEX_MODEL</code> adds <code>-m &lt;model&gt;</code>, otherwise it defers to <code>~/.codex/config.toml</code>.</p>
+    </section>
+
+    <!-- DATA -->
+    <section id="data">
+      <h2><span class="num">08</span>Data model &amp; storage</h2>
+      <div class="section-rule"></div>
+      <p>IdeaClyst is local-first: <strong>there is no database and no in-memory state</strong>. Each run is a directory, and <code>run.json</code> is the single source of truth — the orchestrator rewrites it after each step, the polling API just reads it back.</p>
+      <h3>On-disk layout</h3>
+      <div class="tree">
+<span class="d">.ideaclyst/</span>                          <span class="cmt"># IDEACLYST_DATA_DIR (default)</span>
+└─ <span class="d">runs/</span>
+   └─ <span class="d">&lt;runId&gt;/</span>                     <span class="cmt"># timestamp-prefixed slug</span>
+      ├─ run.json                  <span class="cmt"># ← single source of truth</span>
+      ├─ IDEA.md                   <span class="cmt"># the brief, human-readable</span>
+      ├─ PRODUCT_STRATEGY.md       <span class="cmt"># step 1</span>
+      ├─ TECHNICAL_ARCHITECTURE.md <span class="cmt"># step 2</span>
+      ├─ CRITIQUES.md              <span class="cmt"># steps 3 + 4 combined</span>
+      ├─ FINAL_PLAN.md             <span class="cmt"># step 5</span>
+      └─ TRANSCRIPT.md             <span class="cmt"># running log of every exchange</span>
+      </div>
+      <h3>The run record</h3>
+      <p>A run carries the brief (title, idea, goal, optional target customer / constraints / preferred stack), a <code>status</code> of <code>queued → running → completed | failed</code>, a human-readable <code>currentStep</code> label for the UI, and an <code>outputs</code> object that starts empty and fills in. Run IDs are timestamp-prefixed slugs, so a reverse string-sort yields newest-first for free.</p>
+      <table class="tbl">
+        <tr><th>Status</th><th>Meaning</th></tr>
+        <tr><td><code>queued</code></td><td>Created, council not yet started.</td></tr>
+        <tr><td><code>running</code></td><td>Council in progress; <code>currentStep</code> tracks where.</td></tr>
+        <tr><td><code>completed</code></td><td>All 5 steps done; tabs populated.</td></tr>
+        <tr><td><code>failed</code></td><td>A step errored; <code>error</code> holds the message, prior steps preserved.</td></tr>
+      </table>
+      <div class="note">
+        <div class="ic">✂</div>
+        <div><p><strong>Forgiving section splitting.</strong> Step 5 asks for exact <code>##</code> headings, but <code>markdown.ts</code> matches them case-insensitively by keyword (e.g. "mvp" / "backlog" / "scope") and tolerates <code>###</code>. If a section can't be found, the full plan falls back into the Summary tab — so a tab is never blank.</p></div>
+      </div>
+    </section>
+
+    <!-- API -->
+    <section id="api">
+      <h2><span class="num">09</span>API reference</h2>
+      <div class="section-rule"></div>
+
+      <div class="ep"><span class="verb get">GET</span> <code>/api/runs</code></div>
+      <p>Lists all runs, newest first. Returns <code>{ runs: Run[] }</code>.</p>
+
+      <div class="ep"><span class="verb post">POST</span> <code>/api/runs</code></div>
+      <p>Validates the brief, creates a queued run, fires the council in the background, and returns <code>{ runId }</code> (201). Validation: title required; idea ≥ 10 chars; goal ∈ <code>validate · plan · build · pitch · refine</code>.</p>
+      <pre><span class="c">// request body</span>
+{
+  <span class="v">"title"</span>: <span class="s">"..."</span>,            <span class="c">// required</span>
+  <span class="v">"idea"</span>: <span class="s">"..."</span>,             <span class="c">// required, 10+ chars</span>
+  <span class="v">"goal"</span>: <span class="s">"validate"</span>,        <span class="c">// required, one of the five</span>
+  <span class="v">"targetCustomer"</span>: <span class="s">"..."</span>,   <span class="c">// optional</span>
+  <span class="v">"constraints"</span>: <span class="s">"..."</span>,      <span class="c">// optional</span>
+  <span class="v">"preferredStack"</span>: <span class="s">"..."</span>    <span class="c">// optional</span>
+}</pre>
+
+      <div class="ep"><span class="verb get">GET</span> <code>/api/runs/[runId]</code></div>
+      <p>Returns a single run as <code>{ run: Run }</code> — this is what the detail page polls every 1.5s.</p>
+    </section>
+
+    <!-- FILES -->
+    <section id="files">
+      <h2><span class="num">10</span>File map</h2>
+      <div class="section-rule"></div>
+      <div class="tree">
+<span class="d">src/</span>
+├─ <span class="d">app/</span>
+│  ├─ page.tsx                    <span class="cmt"># homepage</span>
+│  ├─ new/page.tsx               <span class="cmt"># idea form</span>
+│  ├─ runs/page.tsx              <span class="cmt"># sessions list</span>
+│  ├─ runs/[runId]/page.tsx      <span class="cmt"># live run detail (polls)</span>
+│  └─ <span class="d">api/runs/</span>
+│     ├─ route.ts                <span class="cmt"># GET list / POST create + fire</span>
+│     └─ [runId]/route.ts        <span class="cmt"># GET one</span>
+├─ <span class="d">components/</span>                   <span class="cmt"># app-shell, idea-form, result-tabs,</span>
+│                                <span class="cmt">#   run-card, status-pill, empty-state</span>
+└─ <span class="d">lib/</span>
+   ├─ <span class="d">agents/</span>                    <span class="cmt"># THE mode seam</span>
+   │  ├─ index.ts                <span class="cmt"># runAgent() dispatch</span>
+   │  ├─ mock.ts                 <span class="cmt"># offline idea-aware output</span>
+   │  ├─ claude.ts               <span class="cmt"># real `claude` (no -p), per-run dir</span>
+   │  ├─ codex.ts                <span class="cmt"># real `codex exec`</span>
+   │  └─ prompts.ts              <span class="cmt"># the 5 prompt builders</span>
+   ├─ <span class="d">runs/</span>
+   │  ├─ types.ts                <span class="cmt"># Run / RunOutputs data model</span>
+   │  ├─ store.ts                <span class="cmt"># on-disk read/write</span>
+   │  └─ markdown.ts             <span class="cmt"># final-plan section splitter</span>
+   ├─ orchestrator.ts            <span class="cmt"># the 5-step pipeline</span>
+   └─ utils.ts                   <span class="cmt"># slug/runId + markdown renderer</span>
+      </div>
+    </section>
+
+    <!-- CONFIG -->
+    <section id="config">
+      <h2><span class="num">11</span>Configuration</h2>
+      <div class="section-rule"></div>
+      <p>All configuration lives in <code>.env.local</code> (copy from <code>.env.example</code>). No secrets are required.</p>
+      <table class="tbl">
+        <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+        <tr><td><code>IDEACLYST_AGENT_MODE</code></td><td><code>mock</code></td><td><code>mock</code> or <code>cli</code></td></tr>
+        <tr><td><code>IDEACLYST_CLAUDE_BIN</code></td><td><code>claude</code></td><td>Claude CLI binary / path</td></tr>
+        <tr><td><code>IDEACLYST_CLAUDE_MODEL</code></td><td><span class="def">empty</span></td><td>Concrete Claude model (e.g. <code>opus</code>), or defer to the CLI default</td></tr>
+        <tr><td><code>IDEACLYST_CODEX_BIN</code></td><td><code>codex</code></td><td>Codex CLI binary / path</td></tr>
+        <tr><td><code>IDEACLYST_CODEX_MODEL</code></td><td><span class="def">empty</span></td><td>Concrete Codex model, or defer to <code>~/.codex/config.toml</code></td></tr>
+        <tr><td><code>IDEACLYST_AGENT_TIMEOUT_MS</code></td><td><code>180000</code></td><td>Per-agent-call timeout</td></tr>
+        <tr><td><code>IDEACLYST_DATA_DIR</code></td><td><code>.ideaclyst</code></td><td>Where runs are stored</td></tr>
+      </table>
+    </section>
+
+    <!-- RUNNING -->
+    <section id="running">
+      <h2><span class="num">12</span>Running it</h2>
+      <div class="section-rule"></div>
+      <pre><span class="c"># quick start — mock mode, no CLIs needed</span>
+npm install
+cp .env.example .env.local
+npm run dev          <span class="c"># → http://localhost:5417</span>
+
+<span class="c"># then: open the app → "Start an Idea Session" → submit → watch it assemble</span></pre>
+      <table class="tbl">
+        <tr><th>Script</th><th>Does</th></tr>
+        <tr><td><code>npm run dev</code></td><td>Dev server on :5417 (Turbopack)</td></tr>
+        <tr><td><code>npm run build</code></td><td>Production build</td></tr>
+        <tr><td><code>npm run start</code></td><td>Serve the production build on :5417</td></tr>
+        <tr><td><code>npm run lint</code></td><td>ESLint</td></tr>
+        <tr><td><code>npm run typecheck</code></td><td><code>tsc --noEmit</code></td></tr>
+      </table>
+    </section>
+
+    <!-- LIMITS -->
+    <section id="limits">
+      <h2><span class="num">13</span>Limits &amp; troubleshooting</h2>
+      <div class="section-rule"></div>
+      <div class="note warn">
+        <div class="ic">!</div>
+        <div><p><strong>Hot reload interrupts in-flight runs.</strong> The orchestrator runs in-process. In dev, editing a file mid-run can kill an active council. Restart <code>dev</code> and start a fresh session. Completed steps already on disk are kept.</p></div>
+      </div>
+      <div class="note warn">
+        <div class="ic">!</div>
+        <div><p><strong>"The council run failed" in CLI mode.</strong> Almost always a CLI that isn't installed or logged in. Check <code>claude --version</code> and <code>codex login status</code>, or set <code>IDEACLYST_AGENT_MODE=mock</code> to fall back to mock outputs.</p></div>
+      </div>
+      <div class="note warn">
+        <div class="ic">!</div>
+        <div><p><strong>v0 scope.</strong> No auth, billing, teams, database, or Docker. Runs are local files. This is intentional — IdeaClyst is a local-first planning instrument, not a hosted product.</p></div>
+      </div>
+    </section>
+
+    <footer>
+      <span>IdeaClyst · Field Manual · v0.1</span>
+      <span>Catalyze rough ideas into buildable SaaS plans.</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  // mobile nav toggle
+  const btn = document.getElementById('menuBtn');
+  const sidebar = document.getElementById('sidebar');
+  btn.addEventListener('click', () => sidebar.classList.toggle('open'));
+  sidebar.addEventListener('click', e => { if (e.target.tagName === 'A') sidebar.classList.remove('open'); });
+
+  // scroll-spy: highlight active TOC link
+  const links = [...document.querySelectorAll('#toc a')];
+  const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const a = map.get(e.target.id);
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -75% 0px', threshold: 0 });
+  document.querySelectorAll('main section[id]').forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

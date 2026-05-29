@@ -10,6 +10,7 @@
  */
 
 import { Run } from "../runs/types";
+import { runDir } from "../runs/store";
 import { runMock, CouncilStepKey } from "./mock";
 import { runClaude } from "./claude";
 import { runCodex } from "./codex";
@@ -37,7 +38,11 @@ export async function runAgent(
   if (agentMode() === "mock") {
     return runMock(ctx.run, ctx.stepKey);
   }
-  return agent === "claude" ? runClaude(prompt) : runCodex(prompt);
+  // Claude runs inside the idea's own directory (its run dir); Codex uses its
+  // own ephemeral temp dir.
+  return agent === "claude"
+    ? runClaude(prompt, runDir(ctx.run.id))
+    : runCodex(prompt);
 }
 
 export type { CouncilStepKey };
