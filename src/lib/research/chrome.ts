@@ -192,15 +192,22 @@ export async function ensureChrome(): Promise<{ port: number; host: string }> {
     clearTimeout(idleTimer);
     idleTimer = null;
   }
-  if (!(await checkCDP())) {
-    if (!launching) {
-      launching = launch().finally(() => {
-        launching = null;
-      });
+  try {
+    if (!(await checkCDP())) {
+      if (!launching) {
+        launching = launch().finally(() => {
+          launching = null;
+        });
+      }
+      await launching;
     }
-    await launching;
+    return { port: cdpPort(), host: cdpHost() };
+  } catch (err) {
+    // Startup failed before the caller could enter its try/finally — give back
+    // the reference we took so the refcount invariant holds (and reap if idle).
+    releaseChrome();
+    throw err;
   }
-  return { port: cdpPort(), host: cdpHost() };
 }
 
 /** Release a reference; arms the idle reaper when the last caller leaves. */

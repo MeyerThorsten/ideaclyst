@@ -4,11 +4,26 @@
  * truth) plus a human-readable CANDIDATES.md.
  */
 
-import { mkdir, readFile, writeFile, readdir, stat } from "node:fs/promises";
+import { mkdir, readFile, writeFile, readdir, stat, rename, access } from "node:fs/promises";
 import { join } from "node:path";
 
 import { Discovery, CreateDiscoveryInput } from "./types";
 import { makeRunId } from "../utils";
+
+async function writeFileAtomic(path: string, contents: string): Promise<void> {
+  const tmp = `${path}.tmp-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
+  await writeFile(tmp, contents, "utf8");
+  await rename(tmp, path);
+}
+
+async function pathExists(p: string): Promise<boolean> {
+  try {
+    await access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function dataDir(): string {
   return process.env.IDEACLYST_DATA_DIR || ".ideaclyst";
@@ -32,17 +47,20 @@ export async function writeDiscoveryFile(
   contents: string,
 ): Promise<void> {
   await mkdir(discoveryDir(id), { recursive: true });
-  await writeFile(join(discoveryDir(id), filename), contents, "utf8");
+  await writeFileAtomic(join(discoveryDir(id), filename), contents);
 }
 
 async function persist(d: Discovery): Promise<void> {
   await mkdir(discoveryDir(d.id), { recursive: true });
-  await writeFile(jsonPath(d.id), JSON.stringify(d, null, 2), "utf8");
+  await writeFileAtomic(jsonPath(d.id), JSON.stringify(d, null, 2));
 }
 
 export async function createDiscovery(input: CreateDiscoveryInput): Promise<Discovery> {
   const now = new Date().toISOString();
-  const id = makeRunId(input.domain);
+  let id = makeRunId(input.domain);
+  for (let i = 0; i < 5 && (await pathExists(jsonPath(id))); i++) {
+    id = makeRunId(input.domain);
+  }
   const d: Discovery = {
     id,
     domain: input.domain.trim(),
@@ -61,10 +79,19 @@ export async function createDiscovery(input: CreateDiscoveryInput): Promise<Disc
 }
 
 export async function getDiscovery(id: string): Promise<Discovery | null> {
+  let raw: string;
   try {
-    const raw = await readFile(jsonPath(id), "utf8");
+    raw = await readFile(jsonPath(id), "utf8");
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+      console.error(`[ideaclyst] failed to read discovery ${id}:`, err);
+    }
+    return null;
+  }
+  try {
     return JSON.parse(raw) as Discovery;
-  } catch {
+  } catch (err) {
+    console.error(`[ideaclyst] corrupted discovery.json for ${id} (treating as missing):`, err);
     return null;
   }
 }

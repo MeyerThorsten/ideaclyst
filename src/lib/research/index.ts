@@ -14,6 +14,7 @@ import { ensureChrome, releaseChrome } from "./chrome";
 import { reconUrl } from "./recon";
 import { readUrl } from "./read";
 import { webSearch } from "./search";
+import { isSafePublicUrl } from "./url-safety";
 import { marketResearchSynthesisPrompt, marketReadPrompt, candidatesPrompt } from "./synthesize";
 import {
   mockMarketResearch,
@@ -58,14 +59,8 @@ function parseCompetitorUrls(raw?: string): string[] {
     .map((u) => u.trim())
     .filter(Boolean)
     .map((u) => (/^https?:\/\//i.test(u) ? u : `https://${u}`))
-    .filter((u) => {
-      try {
-        new URL(u);
-        return true;
-      } catch {
-        return false;
-      }
-    })
+    // SSRF guard: only allow public http(s) targets (drops localhost/private/metadata).
+    .filter((u) => isSafePublicUrl(u))
     .slice(0, 4);
 }
 
@@ -100,7 +95,11 @@ async function pageSource(
   }
 }
 
-async function liveMarketResearch(run: Run, competitorUrls: string[]): Promise<ResearchResult> {
+async function liveMarketResearch(
+  run: Run,
+  competitorUrls: string[],
+  deadline: number,
+): Promise<ResearchResult> {
   const maxSources = num("IDEACLYST_RESEARCH_MAX_SOURCES", 3);
   const { port, host } = await ensureChrome();
   const notes: string[] = [];
@@ -115,18 +114,23 @@ async function liveMarketResearch(run: Run, competitorUrls: string[]): Promise<R
       kind: "serp" as const,
     }));
 
-    // Deep-recon the top few organic results for real page content.
+    // Deep-recon the top few organic results — stop early if the budget is spent.
     const toRecon = results.slice(0, maxSources).map((r) => r.url);
     for (const url of toRecon) {
+      if (Date.now() > deadline) {
+        notes.push("budget reached during recon");
+        break;
+      }
       const s = await pageSource(url, port, host, false);
       if (s) sources.push(s);
     }
 
     // Competitor teardown: deep-read any supplied competitor URLs.
     let teardown = "";
-    if (competitorUrls.length) {
+    if (competitorUrls.length && Date.now() <= deadline) {
       const compSources: ResearchSource[] = [];
       for (const url of competitorUrls) {
+        if (Date.now() > deadline) break;
         const s = await pageSource(url, port, host, true);
         if (s) compSources.push(s);
       }
@@ -140,8 +144,15 @@ async function liveMarketResearch(run: Run, competitorUrls: string[]): Promise<R
 
     if (!sources.length) {
       notes.push("no web results (possible anti-bot block)");
-      const fb = mockMarketResearch(run, `Live research returned nothing (${notes.join("; ")}).`);
-      return fb;
+      return mockMarketResearch(run, `Live research returned nothing (${notes.join("; ")}).`);
+    }
+
+    // If the budget is already spent, return the gathered sources without paying
+    // for a synthesis call (keeps the step bounded and avoids orphaned work).
+    if (Date.now() > deadline) {
+      notes.push("budget reached before synthesis");
+      const fb = mockMarketResearch(run, `Live research (partial: ${notes.join("; ")}).`);
+      return { ...fb, findings: `${fb.findings}${sourcesFooter(sources)}`, sources };
     }
 
     // Synthesize via the existing agent seam (honors agent mock/cli).
@@ -175,11 +186,11 @@ export async function runMarketResearch(
   }
 
   try {
-    return await withTimeout(
-      liveMarketResearch(run, competitorUrls),
-      num("IDEACLYST_RESEARCH_BUDGET_MS", 60_000),
-      "research budget",
-    );
+    // The budget is a deadline the live pipeline self-enforces (rather than a
+    // race that abandons in-flight work) so Chrome is always released and no
+    // promise keeps running unobserved after we return.
+    const deadline = Date.now() + num("IDEACLYST_RESEARCH_BUDGET_MS", 60_000);
+    return await liveMarketResearch(run, competitorUrls, deadline);
   } catch (err) {
     const reason = err instanceof Error ? err.message : "unknown error";
     return mockMarketResearch(run, `Live research unavailable (${reason}) — used offline synthesis.`);
@@ -188,7 +199,7 @@ export async function runMarketResearch(
 
 // ---- Idea Discovery scouting ----
 
-async function liveScout(queries: string[]): Promise<DiscoveryScoutResult> {
+async function liveScout(queries: string[], deadline: number): Promise<DiscoveryScoutResult> {
   const maxSources = num("IDEACLYST_RESEARCH_MAX_SOURCES", 3);
   const { port, host } = await ensureChrome();
   const notes: string[] = [];
@@ -196,6 +207,10 @@ async function liveScout(queries: string[]): Promise<DiscoveryScoutResult> {
     const sources: ResearchSource[] = [];
     const seen = new Set<string>();
     for (const q of queries) {
+      if (Date.now() > deadline) {
+        notes.push("budget reached during scouting");
+        break;
+      }
       let results;
       try {
         results = await withTimeout(webSearch(q), num("IDEACLYST_RESEARCH_TIMEOUT_MS", 20_000), "webSearch");
@@ -204,6 +219,7 @@ async function liveScout(queries: string[]): Promise<DiscoveryScoutResult> {
         continue;
       }
       for (const r of results.slice(0, maxSources)) {
+        if (Date.now() > deadline) break;
         if (seen.has(r.url)) continue;
         seen.add(r.url);
         const s = await pageSource(r.url, port, host, false);
@@ -239,11 +255,9 @@ export async function scoutMarket(brief: DiscoveryBrief): Promise<DiscoveryScout
     return { ok: false, degraded: true, note: "Mock mode — offline.", sources: [] };
   }
   try {
-    return await withTimeout(
-      liveScout(discoveryQueries(brief)),
-      num("IDEACLYST_RESEARCH_BUDGET_MS", 60_000),
-      "discovery scout budget",
-    );
+    // Deadline (not an abandoning race) so Chrome is always released cleanly.
+    const deadline = Date.now() + num("IDEACLYST_RESEARCH_BUDGET_MS", 60_000);
+    return await liveScout(discoveryQueries(brief), deadline);
   } catch (err) {
     const reason = err instanceof Error ? err.message : "unknown error";
     return { ok: false, degraded: true, note: `Scout unavailable (${reason}).`, sources: [] };

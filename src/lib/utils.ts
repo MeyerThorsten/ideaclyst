@@ -14,10 +14,19 @@ export function slugify(input: string): string {
     .slice(0, 48) || "idea";
 }
 
-/** `<timestamp>-<slug>` — sortable and human-recognizable. */
+/**
+ * `<timestamp(ms)>-<slug>-<rand>` — sortable, human-recognizable, and
+ * collision-resistant. Millisecond precision is fixed-width so lexicographic
+ * sort stays chronological; the random suffix makes same-millisecond collisions
+ * astronomically unlikely (callers also guard against an existing directory).
+ */
 export function makeRunId(title: string): string {
-  const ts = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "");
-  return `${ts}-${slugify(title)}`;
+  const ts = new Date()
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.(\d+)Z$/, "$1"); // keep milliseconds, drop the dot and Z
+  const rand = Math.random().toString(36).slice(2, 8);
+  return `${ts}-${slugify(title)}-${rand}`;
 }
 
 function escapeHtml(s: string): string {
@@ -27,6 +36,26 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
+/**
+ * Sanitize a Markdown link destination for use inside a double-quoted href.
+ * Input has already been HTML-escaped for &/</> (see escapeHtml), but NOT for
+ * quotes, and the scheme is unvalidated — both are XSS vectors when the Markdown
+ * comes from untrusted model/scraped output. Returns null for unsafe schemes so
+ * the link is dropped (text kept).
+ */
+function sanitizeHref(raw: string): string | null {
+  const url = raw.trim();
+  // Unescape &amp; only to test the scheme; the returned value stays escaped.
+  const probe = url.replace(/&amp;/gi, "&").toLowerCase();
+  const safe =
+    /^https?:\/\//.test(probe) ||
+    probe.startsWith("mailto:") ||
+    probe.startsWith("/") ||
+    probe.startsWith("#");
+  if (!safe) return null; // reject javascript:, data:, vbscript:, etc.
+  return url.replace(/"/g, "&quot;");
+}
+
 /** Inline formatting: code, bold, italic, links. Operates on already-escaped text. */
 function renderInline(text: string): string {
   let out = text;
@@ -34,10 +63,11 @@ function renderInline(text: string): string {
   out = out.replace(/`([^`]+)`/g, (_m, c) => `<code class="rounded bg-zinc-100 px-1 py-0.5 text-[0.85em] text-zinc-800">${c}</code>`);
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-zinc-900">$1</strong>');
   out = out.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
-  out = out.replace(
-    /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" class="text-indigo-600 underline underline-offset-2 hover:text-indigo-500" target="_blank" rel="noreferrer">$1</a>',
-  );
+  out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label: string, url: string) => {
+    const href = sanitizeHref(url);
+    if (!href) return label; // unsafe link → keep the text, drop the href
+    return `<a href="${href}" class="text-indigo-600 underline underline-offset-2 hover:text-indigo-500" target="_blank" rel="noreferrer">${label}</a>`;
+  });
   return out;
 }
 
