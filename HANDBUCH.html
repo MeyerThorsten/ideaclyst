@@ -339,11 +339,22 @@
       <div class="section-rule"></div>
       <p>Das ist das Herz der App. Die beiden Agenten wechseln sich ab, und das Entscheidende steht in der <strong>„Sieht“</strong>-Zeile jedes Schritts — jeder Agent liest bestimmte vorherige Ergebnisse, und genau das macht es zu einer Beratung statt zu fünf isolierten Prompts.</p>
       <div class="legend">
+        <span><i class="swatch" style="background:var(--ember)"></i> Surfagent — Web-Recherche</span>
         <span><i class="swatch claude"></i> Claude — skeptischer SaaS-Gründer</span>
         <span><i class="swatch codex"></i> Codex — pragmatischer CTO</span>
       </div>
 
       <div class="flow">
+        <div class="step">
+          <div class="dot" style="background:var(--ember)">0</div>
+          <div class="body" style="border-top:3px solid var(--ember)">
+            <span class="who" style="color:var(--ember)"><i class="swatch" style="width:10px;height:10px;background:var(--ember)"></i> Surfagent · Web-Recherche</span>
+            <h4>Marktrecherche</h4>
+            <p>Bevor der Council berät, durchsucht ein Headless-Chrome das Web nach Markt und Wettbewerbern der Idee und schreibt ein Recherche-Memo, das jeden folgenden Schritt erdet. Best-effort: Fehlt Chrome oder ist eine Suche blockiert, fällt es auf Offline-Synthese zurück — der Run scheitert nie.</p>
+            <div class="sees"><b>Sieht:</b> <span class="tag brief">Idee-Brief</span> <span class="tag">+ Live-Web</span></div>
+          </div>
+        </div>
+
         <div class="step claude">
           <div class="dot claude">1</div>
           <div class="body">
@@ -487,6 +498,7 @@ codex exec --json --skip-git-repo-check --ephemeral \
    └─ <span class="d">&lt;runId&gt;/</span>                     <span class="cmt"># Slug mit Zeitstempel-Präfix</span>
       ├─ run.json                  <span class="cmt"># ← Single Source of Truth</span>
       ├─ IDEA.md                   <span class="cmt"># der Brief, menschenlesbar</span>
+      ├─ RESEARCH_FINDINGS.md      <span class="cmt"># Schritt 0 (Web-Recherche)</span>
       ├─ PRODUCT_STRATEGY.md       <span class="cmt"># Schritt 1</span>
       ├─ TECHNICAL_ARCHITECTURE.md <span class="cmt"># Schritt 2</span>
       ├─ CRITIQUES.md              <span class="cmt"># Schritte 3 + 4 kombiniert</span>

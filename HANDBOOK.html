@@ -355,11 +355,22 @@
       <div class="section-rule"></div>
       <p>This is the heart of the app. The two agents alternate, and the crucial detail is in the <strong>"sees"</strong> line of each step — every agent reads specific prior outputs, which is what makes it a deliberation rather than five isolated prompts.</p>
       <div class="legend">
+        <span><i class="swatch" style="background:var(--ember)"></i> Surfagent — web research</span>
         <span><i class="swatch claude"></i> Claude — skeptical SaaS founder</span>
         <span><i class="swatch codex"></i> Codex — pragmatic CTO</span>
       </div>
 
       <div class="flow">
+        <div class="step">
+          <div class="dot" style="background:var(--ember)">0</div>
+          <div class="body" style="border-top:3px solid var(--ember)">
+            <span class="who" style="color:var(--ember)"><i class="swatch" style="width:10px;height:10px;background:var(--ember)"></i> Surfagent · Web research</span>
+            <h4>Market research</h4>
+            <p>Before the council deliberates, headless Chrome scouts the web for the idea's market and competitors and writes a research memo that grounds every later step. Best-effort: if Chrome is missing or a search is blocked it falls back to offline synthesis — the run never fails.</p>
+            <div class="sees"><b>Sees:</b> <span class="tag brief">idea brief</span> <span class="tag">+ live web</span></div>
+          </div>
+        </div>
+
         <div class="step claude">
           <div class="dot claude">1</div>
           <div class="body">
@@ -503,6 +514,7 @@ codex exec --json --skip-git-repo-check --ephemeral \
    └─ <span class="d">&lt;runId&gt;/</span>                     <span class="cmt"># timestamp-prefixed slug</span>
       ├─ run.json                  <span class="cmt"># ← single source of truth</span>
       ├─ IDEA.md                   <span class="cmt"># the brief, human-readable</span>
+      ├─ RESEARCH_FINDINGS.md      <span class="cmt"># step 0 (web research)</span>
       ├─ PRODUCT_STRATEGY.md       <span class="cmt"># step 1</span>
       ├─ TECHNICAL_ARCHITECTURE.md <span class="cmt"># step 2</span>
       ├─ CRITIQUES.md              <span class="cmt"># steps 3 + 4 combined</span>
