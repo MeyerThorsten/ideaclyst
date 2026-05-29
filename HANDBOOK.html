@@ -282,7 +282,7 @@
         </div></div>
         <div class="step go"><div class="dot go">8</div><div class="body">
           <h4>(Optional) Switch to the real CLIs</h4>
-          <p>For real model output, set <code>IDEACLYST_AGENT_MODE=cli</code> in <code>.env.local</code>, make sure both CLIs are installed and logged in, then restart the server and run a new session.</p>
+          <p>For real model output, set <code>IDEACLYST_AGENT_MODE=cli</code> in <code>.env.local</code>, make sure both CLIs are installed and logged in, then restart the server and run a new session. A real council takes <strong>~5–7 min</strong> (five live model calls), versus instant in mock mode.</p>
           <span class="cmd">claude --version &amp;&amp; codex login status</span>
         </div></div>
         <div class="step go"><div class="dot go">9</div><div class="body">
@@ -454,6 +454,14 @@
         <div class="ic">!</div>
         <div><p><strong>CLI mode prerequisites.</strong> Both binaries must be on PATH and authenticated: <code>claude --version</code> and <code>codex login status</code>. IdeaClyst never handles credentials — it relies entirely on each CLI's own local session.</p></div>
       </div>
+      <div class="note">
+        <div class="ic">⏱</div>
+        <div><p><strong>Expect minutes, not seconds.</strong> A full council in CLI mode is five real model calls — roughly 50–80s per step, ~5–7 min end to end. Mock mode finishes instantly. Env vars are read at server start, so <strong>restart the dev server</strong> after changing the mode, and note that switching modes <strong>does not recompute existing runs</strong> — start a fresh session.</p></div>
+      </div>
+      <div class="note">
+        <div class="ic">✓</div>
+        <div><p><strong>Did a run actually use the real CLIs?</strong> Open its <code>PRODUCT_STRATEGY.md</code> — real output is specific to your idea and references your preferred stack / constraints, whereas mock output reuses a fixed template (it splices your idea text into generic phrasing like “…points at a workflow that is currently manual, fragmented, or simply tolerated”).</p></div>
+      </div>
     </section>
 
     <!-- CLI CALLS -->
@@ -537,6 +545,19 @@ codex exec --json --skip-git-repo-check --ephemeral \
 
       <div class="ep"><span class="verb get">GET</span> <code>/api/runs/[runId]</code></div>
       <p>Returns a single run as <code>{ run: Run }</code> — this is what the detail page polls every 1.5s.</p>
+
+      <h3>Drive a run from the terminal</h3>
+      <p>The UI is just a client of this API — anything you can do in the browser you can do from a script. Create a run, poll until it completes, then read the packet off disk:</p>
+      <pre><span class="c"># 1. Create a run → returns { "runId": "..." }</span>
+curl -s -X POST http://localhost:5417/api/runs \
+  -H <span class="s">'Content-Type: application/json'</span> \
+  -d <span class="s">'{"title":"StandupScribe","idea":"A Slack bot that posts a daily standup digest.","goal":"plan"}'</span>
+
+<span class="c"># 2. Poll status until completed (every few seconds)</span>
+curl -s http://localhost:5417/api/runs/<span class="v">&lt;runId&gt;</span> | jq <span class="s">'.run.status, .run.currentStep'</span>
+
+<span class="c"># 3. Read the finished packet</span>
+cat .ideaclyst/runs/<span class="v">&lt;runId&gt;</span>/FINAL_PLAN.md</pre>
     </section>
 
     <!-- FILES -->

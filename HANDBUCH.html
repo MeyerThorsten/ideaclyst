@@ -266,7 +266,7 @@
         </div></div>
         <div class="step go"><div class="dot go">8</div><div class="body">
           <h4>(Optional) Auf echte CLIs umstellen</h4>
-          <p>Für echte Modell-Ausgaben setzt du <code>IDEACLYST_AGENT_MODE=cli</code> in <code>.env.local</code>, stellst sicher, dass beide CLIs installiert und eingeloggt sind, startest den Server neu und legst eine neue Session an.</p>
+          <p>Für echte Modell-Ausgaben setzt du <code>IDEACLYST_AGENT_MODE=cli</code> in <code>.env.local</code>, stellst sicher, dass beide CLIs installiert und eingeloggt sind, startest den Server neu und legst eine neue Session an. Ein echter Council dauert <strong>~5–7 min</strong> (fünf echte Modell-Aufrufe), im Mock-Modus dagegen sofort.</p>
           <span class="cmd">claude --version &amp;&amp; codex login status</span>
         </div></div>
         <div class="step go"><div class="dot go">9</div><div class="body">
@@ -438,6 +438,14 @@
         <div class="ic">!</div>
         <div><p><strong>Voraussetzungen für den CLI-Modus.</strong> Beide Binaries müssen auf dem PATH liegen und authentifiziert sein: <code>claude --version</code> und <code>codex login status</code>. IdeaClyst fasst nie Credentials an — es verlässt sich vollständig auf die lokale Session jeder CLI.</p></div>
       </div>
+      <div class="note">
+        <div class="ic">⏱</div>
+        <div><p><strong>Rechne mit Minuten, nicht Sekunden.</strong> Ein vollständiger Council im CLI-Modus sind fünf echte Modell-Aufrufe — grob 50–80 s pro Schritt, ~5–7 min gesamt. Der Mock-Modus ist sofort fertig. Env-Variablen werden beim Server-Start gelesen, also <strong>starte den Dev-Server neu</strong>, nachdem du den Modus geändert hast. Und beachte: Ein Moduswechsel <strong>berechnet bestehende Runs nicht neu</strong> — lege eine frische Session an.</p></div>
+      </div>
+      <div class="note">
+        <div class="ic">✓</div>
+        <div><p><strong>Wurde ein Run wirklich von den echten CLIs erzeugt?</strong> Öffne seine <code>PRODUCT_STRATEGY.md</code> — echte Ausgabe ist spezifisch zu deiner Idee und greift deinen bevorzugten Stack / deine Constraints auf, während Mock-Ausgabe eine feste Vorlage wiederverwendet (sie spleißt deinen Ideen-Text in generische Phrasen wie „…points at a workflow that is currently manual, fragmented, or simply tolerated“).</p></div>
+      </div>
     </section>
 
     <!-- CLI CALLS -->
@@ -521,6 +529,19 @@ codex exec --json --skip-git-repo-check --ephemeral \
 
       <div class="ep"><span class="verb get">GET</span> <code>/api/runs/[runId]</code></div>
       <p>Gibt einen einzelnen Run als <code>{ run: Run }</code> zurück — genau das pollt die Detailseite alle 1,5 s.</p>
+
+      <h3>Einen Run vom Terminal aus steuern</h3>
+      <p>Die UI ist nur ein Client dieser API — alles, was du im Browser tun kannst, geht auch per Skript. Run anlegen, bis zum Abschluss pollen, dann das Paket von der Platte lesen:</p>
+      <pre><span class="c"># 1. Run anlegen → liefert { "runId": "..." }</span>
+curl -s -X POST http://localhost:5417/api/runs \
+  -H <span class="s">'Content-Type: application/json'</span> \
+  -d <span class="s">'{"title":"StandupScribe","idea":"Ein Slack-Bot, der einen täglichen Standup-Digest postet.","goal":"plan"}'</span>
+
+<span class="c"># 2. Status pollen, bis completed (alle paar Sekunden)</span>
+curl -s http://localhost:5417/api/runs/<span class="v">&lt;runId&gt;</span> | jq <span class="s">'.run.status, .run.currentStep'</span>
+
+<span class="c"># 3. Das fertige Paket lesen</span>
+cat .ideaclyst/runs/<span class="v">&lt;runId&gt;</span>/FINAL_PLAN.md</pre>
     </section>
 
     <!-- FILES -->

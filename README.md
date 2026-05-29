@@ -44,7 +44,8 @@ default, so you need **no CLIs** to try it end to end.
    `/runs`.
 8. **(Optional) Switch to the real CLIs** — set `IDEACLYST_AGENT_MODE=cli` in
    `.env.local`, make sure both CLIs are installed and logged in, then restart the
-   server and run a new session:
+   server and run a new session. A real council takes **~5–7 min** (five live model
+   calls), versus instant in mock mode:
    ```bash
    claude --version && codex login status
    ```
@@ -146,6 +147,17 @@ claude --version          # Claude Code CLI on PATH
 codex login status        # Codex CLI logged in (ChatGPT session)
 ```
 
+> ⏱️ **Expect minutes, not seconds.** A full council in CLI mode is five real model
+> calls — roughly 50–80s per step, ~5–7 min end to end. Mock mode finishes instantly.
+> Env vars are read at server start, so **restart `npm run dev`** after changing the
+> mode, and note that switching modes **does not recompute existing runs** — start a
+> fresh session.
+
+**Did a run actually use the real CLIs?** Open its `PRODUCT_STRATEGY.md` — real output
+is specific to your idea and references your `preferredStack`/constraints, whereas mock
+output reuses a fixed template (it splices your idea text into generic phrasing like
+"…points at a workflow that is currently manual, fragmented, or simply tolerated").
+
 ---
 
 ## How CLI calls work
@@ -221,6 +233,29 @@ section can't be found — so a tab is never blank.
   goal ∈ `validate · plan · build · pitch · refine`.
 - **`GET /api/runs/[runId]`** — return a single run as `{ run: Run }` (what the detail
   page polls every 1.5s).
+
+### Drive a run from the terminal
+
+The UI is just a client of this API — anything you can do in the browser you can do from
+a script. Create a run, then poll until it completes:
+
+```bash
+# 1. Create a run → returns { "runId": "..." }
+curl -s -X POST http://localhost:5417/api/runs \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "StandupScribe",
+    "idea": "A Slack bot that collects async standup updates and posts a daily digest.",
+    "goal": "plan",
+    "preferredStack": "TypeScript, Next.js, Vercel"
+  }'
+
+# 2. Poll status until completed (every few seconds)
+curl -s http://localhost:5417/api/runs/<runId> | jq '.run.status, .run.currentStep'
+
+# 3. Read the finished packet from disk
+cat .ideaclyst/runs/<runId>/FINAL_PLAN.md
+```
 
 ---
 
