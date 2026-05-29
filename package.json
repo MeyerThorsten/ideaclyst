@@ -2,6 +2,13 @@
   "name": "ideaclyst",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "homepage": "https://ideaclyst.com",
+  "author": "Thorsten Meyer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MeyerThorsten/ideaclyst.git"
+  },
   "scripts": {
     "dev": "next dev -p 5417 --turbopack",
     "build": "next build",

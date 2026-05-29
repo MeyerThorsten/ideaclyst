@@ -28,3 +28,7 @@ next-env.d.ts
 
 # ideaclyst run data (local-first, on-disk runs)
 /.ideaclyst/
+
+# marketing site (deployed to ideaclyst.com, kept out of the app repo)
+/site/
+/ideaclyst-site.zip

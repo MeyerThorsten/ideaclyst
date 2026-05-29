@@ -32,8 +32,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">{children}</main>
       <footer className="border-t border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4 text-xs text-zinc-400">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-6 py-4 text-xs text-zinc-400">
           <span>IdeaClyst v0.1.0</span>
+          <span>
+            Powered by{" "}
+            <a
+              href="https://thorstenmeyerai.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-zinc-600 underline-offset-2 transition hover:text-zinc-900 hover:underline"
+            >
+              Thorsten Meyer AI
+            </a>
+          </span>
           <span>Catalyze rough ideas into buildable SaaS plans.</span>
         </div>
       </footer>

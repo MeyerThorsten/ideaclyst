@@ -2,6 +2,8 @@
 
 **Catalyze rough ideas into buildable SaaS plans.**
 
+🌐 [**ideaclyst.com**](https://ideaclyst.com) &nbsp;·&nbsp; 📦 Open source under the [MIT License](LICENSE)
+
 IdeaClyst is a local-first Next.js app that turns a rough product idea into a
 founder planning packet by orchestrating a structured **council** between the
 **Claude Code CLI** and the **Codex CLI**.
@@ -312,3 +314,11 @@ npm run typecheck  # tsc --noEmit
   orchestrator runs in-process). If you edit a file mid-run, restart `dev` and start a
   fresh session.
 - No auth, billing, teams, database, or Docker. Runs are local files.
+
+---
+
+## License
+
+IdeaClyst is open source under the [MIT License](LICENSE). © 2026 Thorsten Meyer.
+
+Website: [ideaclyst.com](https://ideaclyst.com) · Powered by [Thorsten Meyer AI](https://thorstenmeyerai.com/).
