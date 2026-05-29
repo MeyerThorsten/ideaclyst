@@ -15,6 +15,7 @@ export default function ResultTabs({ run }: { run: Run }) {
   const o = run.outputs;
   const tabs: TabDef[] = [
     { key: "summary", label: "Summary", value: o.summary },
+    { key: "researchFindings", label: "Research", value: o.researchFindings },
     { key: "productStrategy", label: "Product Strategy", value: o.productStrategy },
     { key: "technicalArchitecture", label: "Technical Architecture", value: o.technicalArchitecture },
     { key: "mvpBacklog", label: "MVP Backlog", value: o.mvpBacklog },

@@ -10,6 +10,7 @@ import ResultTabs from "@/components/result-tabs";
 const POLL_MS = 1500;
 
 const STEP_FLOW = [
+  "Market research",
   "Product strategy",
   "Technical architecture",
   "Claude critiques the architecture",

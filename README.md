@@ -100,7 +100,8 @@ isolated prompts.
 
 | Step | Agent  | Role | Sees |
 |------|--------|------|------|
-| 1 | **Claude** | Product strategy (skeptical founder) | idea brief |
+| 0 | **Research** | Web scouting of the market/competitors (surfagent) | idea brief |
+| 1 | **Claude** | Product strategy (skeptical founder) | idea brief + research |
 | 2 | **Codex**  | Technical architecture (CTO) | brief + **step 1 strategy** |
 | 3 | **Claude** | Critiques the architecture (product lens) | brief + **step 2 architecture** |
 | 4 | **Codex**  | Critiques the strategy (engineering lens) | brief + **step 1 strategy** |
@@ -112,6 +113,32 @@ decisive verdict (step 5). After every step the orchestrator rewrites `run.json`
 Markdown file, so the UI reveals outputs one at a time.
 
 ---
+
+## Web research & Idea Discovery
+
+IdeaClyst vendors [surfagent](https://github.com/AllAboutAI-YT/surfagent)'s read-only
+Chrome-DevTools-Protocol modules (`src/lib/research/`) to ground the council in real web
+data — and to help you *find* ideas, not just evaluate them.
+
+- **Market research (Step 0)** — before the council, it web-searches the idea, recons the
+  top results, and writes a `RESEARCH_FINDINGS.md` that feeds every later step. Surfaced as
+  a **Research** tab.
+- **Competitor teardown** — paste competitor URLs in the form; their pages are deep-reconned
+  into a teardown section.
+- **Validation evidence** — the final synthesis cites the gathered sources (with links) in
+  the Validation Tests section.
+- **Idea Discovery** (`/discover`) — give a market; surfagent scouts the web and proposes
+  candidate ideas you can **promote** straight into a full council run.
+
+Research is **best-effort and mode-gated**, mirroring the agent seam:
+
+- It follows `IDEACLYST_AGENT_MODE` by default (`cli` → live headless Chrome, `mock` →
+  deterministic offline output). Override with `IDEACLYST_RESEARCH_MODE`.
+- The live path lazily launches one headless Chrome (auto-detected or `IDEACLYST_CHROME_BIN`),
+  defaults to the DuckDuckGo HTML endpoint, and enforces per-recon timeouts + an overall
+  budget. If Chrome is missing or a search is blocked, it **degrades to offline synthesis with
+  a note — a run never fails because of research.** Requires a Chrome/Chromium install for the
+  live path; mock needs nothing. See `.env.example` for all `IDEACLYST_RESEARCH_*` knobs.
 
 ## Request lifecycle
 
@@ -275,8 +302,10 @@ src/
   components/                 # app-shell, idea-form, result-tabs, run-card, …
   lib/
     agents/                   # runAgent dispatch + mock / claude / codex / prompts
+    research/                 # vendored surfagent CDP modules + research seam (mock/live)
+    discovery/                # idea-discovery store + orchestrator
     runs/                     # types, on-disk store, final-plan section splitter
-    orchestrator.ts           # the 5-step council pipeline
+    orchestrator.ts           # the council pipeline (research Step 0 + 5 council steps)
     utils.ts                  # slug + lightweight markdown renderer
 ```
 

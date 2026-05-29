@@ -1,0 +1,382 @@
+/**
+ * Page reconnaissance — vendored from surfagent (src/api/recon.ts), trimmed to
+ * `reconUrl` (open a fresh tab, extract a structured page map, close the tab).
+ * The in-page EXTRACTION_SCRIPT is unchanged from surfagent. Read-only: we never
+ * interact with the page.
+ */
+
+import CDP from "chrome-remote-interface";
+import { connectToTab, CDPClient } from "./connector";
+
+export interface ReconResult {
+  url: string;
+  title: string;
+  tabId: string;
+  timestamp: string;
+  meta: {
+    description: string | null;
+    ogTitle: string | null;
+    ogDescription: string | null;
+    jsonLd: unknown[];
+  };
+  headings: { level: number; text: string }[];
+  navigation: { text: string; href: string; section: string | null }[];
+  elements: {
+    tag: string;
+    text: string;
+    type: string | null;
+    href: string | null;
+    id: string | null;
+    selector: string;
+    role: string | null;
+    x: number;
+    y: number;
+    data?: Record<string, string>;
+  }[];
+  totalElements: number;
+  forms: {
+    action: string | null;
+    method: string | null;
+    id: string | null;
+    fields: {
+      tag: string;
+      type: string | null;
+      name: string | null;
+      id: string | null;
+      label: string | null;
+      placeholder: string | null;
+      required: boolean;
+      options: string[] | null;
+      selector: string;
+    }[];
+  }[];
+  contentSummary: string;
+  landmarks: { role: string; label: string | null; tag: string }[];
+  overlays: { type: string; text: string; selector: string }[];
+  captchas: { type: string; src: string }[];
+}
+
+const EXTRACTION_SCRIPT = `
+(function() {
+  function getText(el) {
+    const sources = [
+      el.innerText, el.textContent, el.value, el.placeholder,
+      el.getAttribute('aria-label'), el.getAttribute('title'),
+      el.getAttribute('alt'), el.getAttribute('name'),
+      el.id ? document.querySelector('label[for="' + el.id + '"]')?.textContent : null
+    ];
+    for (const src of sources) {
+      if (src && src.trim()) return src.trim().replace(/\\s+/g, ' ').substring(0, 120);
+    }
+    return '';
+  }
+
+  function isVisible(el) {
+    if (!el) return false;
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
+
+  function cssAttr(v) {
+    return '"' + String(v).replace(/\\\\/g, '\\\\\\\\').replace(/"/g, '\\\\"') + '"';
+  }
+
+  function buildSelector(el) {
+    if (el.id) return '#' + CSS.escape(el.id);
+    const tag = el.tagName.toLowerCase();
+    if (el.getAttribute('aria-label')) return tag + '[aria-label=' + cssAttr(el.getAttribute('aria-label')) + ']';
+    if (el.getAttribute('data-testid')) return '[data-testid=' + cssAttr(el.getAttribute('data-testid')) + ']';
+    if (el.getAttribute('name')) {
+      const nameSelector = tag + '[name=' + cssAttr(el.getAttribute('name')) + ']';
+      if ((el.type === 'radio' || el.type === 'checkbox') && el.value) {
+        return nameSelector + '[value=' + cssAttr(el.value) + ']';
+      }
+      return nameSelector;
+    }
+    const parent = el.parentElement;
+    if (!parent) return tag;
+    const siblings = Array.from(parent.children).filter(c => c.tagName === el.tagName);
+    if (siblings.length === 1) return buildSelector(parent) + ' > ' + tag;
+    const idx = siblings.indexOf(el) + 1;
+    return buildSelector(parent) + ' > ' + tag + ':nth-child(' + idx + ')';
+  }
+
+  function isClickable(el) {
+    const tag = el.tagName.toLowerCase();
+    const role = el.getAttribute('role');
+    return tag === 'button' || tag === 'a' || tag === 'input' || tag === 'textarea' || tag === 'select'
+      || role === 'button' || role === 'link' || role === 'tab' || role === 'menuitem' || role === 'option' || role === 'listitem' || role === 'treeitem'
+      || el.onclick !== null || el.getAttribute('onclick')
+      || (el.hasAttribute('tabindex') && el.getAttribute('tabindex') !== '-1')
+      || window.getComputedStyle(el).cursor === 'pointer';
+  }
+
+  const metaDesc = document.querySelector('meta[name="description"]');
+  const ogTitle = document.querySelector('meta[property="og:title"]');
+  const ogDesc = document.querySelector('meta[property="og:description"]');
+  const jsonLdScripts = document.querySelectorAll('script[type="application/ld+json"]');
+  const jsonLd = [];
+  for (const s of jsonLdScripts) {
+    try { jsonLd.push(JSON.parse(s.textContent)); } catch(e) {}
+  }
+
+  const headings = [];
+  for (const h of document.querySelectorAll('h1,h2,h3,h4,h5,h6')) {
+    if (!isVisible(h)) continue;
+    const text = h.innerText?.trim();
+    if (text) headings.push({ level: parseInt(h.tagName[1]), text: text.substring(0, 200) });
+  }
+
+  const navigation = [];
+  const navEls = document.querySelectorAll('nav a[href], header a[href], [role="navigation"] a[href]');
+  const navSeen = new Set();
+  for (const a of navEls) {
+    if (!isVisible(a)) continue;
+    const text = a.innerText?.trim();
+    const href = a.href;
+    if (!text || navSeen.has(href)) continue;
+    navSeen.add(href);
+    const section = a.closest('nav,header,[role="navigation"]');
+    const sectionLabel = section?.getAttribute('aria-label') || null;
+    navigation.push({ text: text.substring(0, 100), href, section: sectionLabel });
+  }
+
+  const elements = [];
+  const elSeen = new Set();
+  function findElements(root, depth) {
+    if (depth > 8) return;
+    for (const el of root.querySelectorAll('*')) {
+      if (el.shadowRoot) findElements(el.shadowRoot, depth + 1);
+      if (!isVisible(el) || !isClickable(el)) continue;
+      const text = getText(el);
+      const key = el.tagName + ':' + text + ':' + (el.href || '') + ':' + (el.id || '');
+      if (elSeen.has(key)) continue;
+      elSeen.add(key);
+      if (!text && !['INPUT','TEXTAREA','SELECT'].includes(el.tagName)) continue;
+      const rect = el.getBoundingClientRect();
+      elements.push({
+        tag: el.tagName,
+        text,
+        type: el.type || null,
+        href: el.href || null,
+        id: el.id || null,
+        selector: buildSelector(el),
+        role: el.getAttribute('role'),
+        x: Math.round(rect.x),
+        y: Math.round(rect.y),
+        ...(el.dataset && Object.keys(el.dataset).length > 0 ? {
+          data: Object.fromEntries(
+            ['date','iso','value','testid','id'].filter(k => el.dataset[k]).map(k => [k, el.dataset[k]])
+          )
+        } : {})
+      });
+    }
+  }
+  findElements(document, 0);
+  try {
+    for (const iframe of document.querySelectorAll('iframe')) {
+      if (iframe.contentDocument) findElements(iframe.contentDocument, 0);
+    }
+  } catch(e) {}
+  elements.sort((a, b) => a.y - b.y);
+
+  const forms = [];
+  for (const form of document.querySelectorAll('form')) {
+    if (!isVisible(form)) continue;
+    const fields = [];
+    for (const el of form.querySelectorAll('input,textarea,select')) {
+      if (!isVisible(el)) continue;
+      const tag = el.tagName.toLowerCase();
+      const type = el.type || null;
+      if (type === 'hidden') continue;
+      const labelEl = el.id ? document.querySelector('label[for="' + el.id + '"]') : el.closest('label');
+      const label = labelEl?.innerText?.trim()?.substring(0, 100) || el.getAttribute('aria-label') || null;
+      let options = null;
+      if (tag === 'select') {
+        options = Array.from(el.querySelectorAll('option')).map(o => o.textContent?.trim()).filter(Boolean).slice(0, 20);
+      }
+      fields.push({
+        tag, type,
+        name: el.getAttribute('name'),
+        id: el.id || null,
+        label,
+        placeholder: el.placeholder || null,
+        required: el.required || el.getAttribute('aria-required') === 'true',
+        options,
+        selector: buildSelector(el)
+      });
+    }
+    forms.push({
+      action: form.action || null,
+      method: (form.method || 'get').toUpperCase(),
+      id: form.id || null,
+      fields
+    });
+  }
+
+  const landmarks = [];
+  const landmarkRoles = ['banner','main','navigation','complementary','contentinfo','search','form','region'];
+  for (const role of landmarkRoles) {
+    for (const el of document.querySelectorAll('[role="' + role + '"],' + (role === 'banner' ? 'header' : role === 'main' ? 'main' : role === 'navigation' ? 'nav' : role === 'contentinfo' ? 'footer' : role === 'search' ? 'search' : '_never_'))) {
+      if (!isVisible(el)) continue;
+      landmarks.push({
+        role,
+        label: el.getAttribute('aria-label') || null,
+        tag: el.tagName.toLowerCase()
+      });
+    }
+  }
+
+  const overlays = [];
+  for (const el of document.querySelectorAll('[role="dialog"], [role="alertdialog"], dialog[open], .modal, [data-overlay], [aria-modal="true"]')) {
+    if (!isVisible(el)) continue;
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 100 && rect.height > 50) {
+      overlays.push({ type: 'dialog', text: (el.innerText || '').trim().substring(0, 200), selector: buildSelector(el) });
+    }
+  }
+  for (const el of document.querySelectorAll('[class*="cookie"], [class*="consent"], [class*="banner"], [id*="cookie"], [id*="consent"]')) {
+    if (!isVisible(el)) continue;
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 200) {
+      overlays.push({ type: 'cookie/consent', text: (el.innerText || '').trim().substring(0, 200), selector: buildSelector(el) });
+    }
+  }
+  for (const el of document.querySelectorAll('body > div, body > aside, body > section')) {
+    if (!isVisible(el)) continue;
+    const style = window.getComputedStyle(el);
+    if ((style.position === 'fixed' || style.position === 'absolute') && parseFloat(style.zIndex) > 999) {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.3) {
+        overlays.push({ type: 'overlay', text: (el.innerText || '').trim().substring(0, 200), selector: buildSelector(el) });
+      }
+    }
+  }
+  const deduped = overlays.filter((o, i) => {
+    const el = document.querySelector(o.selector);
+    if (!el) return true;
+    return !overlays.some((other, j) => {
+      if (i === j) return false;
+      const otherEl = document.querySelector(other.selector);
+      return otherEl && otherEl !== el && otherEl.contains(el);
+    });
+  });
+
+  const captchas = [];
+  for (const iframe of document.querySelectorAll('iframe')) {
+    const src = iframe.src || '';
+    let type = null;
+    if (src.includes('arkoselabs') || src.includes('funcaptcha')) type = 'arkose';
+    else if (src.includes('recaptcha') || src.includes('google.com/recaptcha')) type = 'recaptcha';
+    else if (src.includes('hcaptcha')) type = 'hcaptcha';
+    else if (src.includes('octocaptcha')) type = 'octocaptcha';
+    else if (src.includes('captcha')) type = 'captcha';
+    if (type) captchas.push({ type, src: src.substring(0, 200) });
+  }
+
+  const clone = document.body.cloneNode(true);
+  clone.querySelectorAll('script,style,noscript,svg').forEach(e => e.remove());
+  const fullText = (clone.innerText || '').trim();
+  const contentSummary = fullText.substring(0, 2000);
+
+  return {
+    meta: {
+      description: metaDesc?.getAttribute('content') || null,
+      ogTitle: ogTitle?.getAttribute('content') || null,
+      ogDescription: ogDesc?.getAttribute('content') || null,
+      jsonLd
+    },
+    headings,
+    navigation: navigation.slice(0, 50),
+    elements: elements.slice(0, 150),
+    totalElements: elements.length,
+    forms,
+    landmarks,
+    overlays: deduped,
+    captchas,
+    contentSummary
+  };
+})()
+`;
+
+export async function reconUrl(
+  url: string,
+  options: { port?: number; host?: string; waitMs?: number },
+): Promise<ReconResult> {
+  const port = options.port || 9222;
+  const host = options.host || "localhost";
+  const waitMs = options.waitMs ?? 2000;
+
+  const target = await CDP.New({ port, host, url });
+  let client: CDPClient | null = null;
+
+  try {
+    client = await connectToTab(target.id, port, host);
+
+    // Wait for load + settle. Some pages never fire load; race it against waitMs.
+    await Promise.race([
+      (client.Page as unknown as { loadEventFired?: () => Promise<void> }).loadEventFired?.() ??
+        Promise.resolve(),
+      new Promise((r) => setTimeout(r, waitMs)),
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+
+    const titleResult = await client.Runtime.evaluate({
+      expression: "document.title",
+      returnByValue: true,
+    });
+    let title = (titleResult.result.value as string) || "";
+    if (!title) {
+      try {
+        const targets = await CDP.List({ port, host });
+        const t = targets.find((t) => t.id === target.id);
+        if (t?.title) title = t.title;
+      } catch {}
+    }
+
+    const urlResult = await client.Runtime.evaluate({
+      expression: "window.location.href",
+      returnByValue: true,
+    });
+    const finalUrl = (urlResult.result.value as string) || url;
+
+    const extractionResult = await client.Runtime.evaluate({
+      expression: EXTRACTION_SCRIPT,
+      returnByValue: true,
+    });
+    const data = extractionResult.result.value as Omit<
+      ReconResult,
+      "url" | "title" | "tabId" | "timestamp"
+    >;
+
+    await client.close();
+    client = null;
+
+    await CDP.Close({ port, host, id: target.id });
+
+    return {
+      url: finalUrl,
+      title: title || target.title || "",
+      tabId: target.id,
+      timestamp: new Date().toISOString(),
+      meta: data.meta,
+      headings: data.headings,
+      navigation: data.navigation,
+      elements: data.elements,
+      totalElements: data.totalElements || data.elements?.length || 0,
+      forms: data.forms,
+      contentSummary: data.contentSummary,
+      landmarks: data.landmarks,
+      overlays: data.overlays || [],
+      captchas: data.captchas || [],
+    };
+  } catch (error) {
+    if (client) await client.close().catch(() => {});
+    try {
+      await CDP.Close({ port, host, id: target.id });
+    } catch {}
+    throw error;
+  }
+}

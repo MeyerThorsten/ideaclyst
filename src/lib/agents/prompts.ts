@@ -24,8 +24,19 @@ const FORMAT_NOTE =
   "specific to this idea — no generic boilerplate. Do not ask questions or " +
   "request clarification; make reasonable assumptions and state them.";
 
+/** Optional market-research context block, injected after the idea brief. */
+function researchSection(research?: string): string {
+  if (!research || !research.trim()) return "";
+  return [
+    "",
+    "## Market research (from web scouting)",
+    "Use this as grounding evidence. It may be incomplete or, in offline mode, synthesized.",
+    research.trim(),
+  ].join("\n");
+}
+
 /** Step 1 — Claude as a skeptical SaaS founder / product strategist. */
-export function productStrategyPrompt(run: Run): string {
+export function productStrategyPrompt(run: Run, research?: string): string {
   return [
     "You are a skeptical, experienced SaaS founder acting as product strategist.",
     "You have seen many ideas fail. Pressure-test this one and shape it into a",
@@ -36,13 +47,18 @@ export function productStrategyPrompt(run: Run): string {
     "",
     "## Idea brief",
     brief(run),
+    researchSection(research),
     "",
     FORMAT_NOTE,
   ].join("\n");
 }
 
 /** Step 2 — Codex as a pragmatic CTO, given the idea + Claude's strategy. */
-export function technicalArchitecturePrompt(run: Run, productStrategy: string): string {
+export function technicalArchitecturePrompt(
+  run: Run,
+  productStrategy: string,
+  research?: string,
+): string {
   return [
     "You are a pragmatic CTO. Given the idea and the product strategy below, design",
     "a lean, buildable technical architecture for an MVP. Cover: recommended stack",
@@ -52,6 +68,7 @@ export function technicalArchitecturePrompt(run: Run, productStrategy: string): 
     "",
     "## Idea brief",
     brief(run),
+    researchSection(research),
     "",
     "## Product strategy (from the strategist)",
     productStrategy,
@@ -61,7 +78,11 @@ export function technicalArchitecturePrompt(run: Run, productStrategy: string): 
 }
 
 /** Step 3 — Claude critiques Codex's technical plan. */
-export function claudeCritiquePrompt(run: Run, technicalArchitecture: string): string {
+export function claudeCritiquePrompt(
+  run: Run,
+  technicalArchitecture: string,
+  research?: string,
+): string {
   return [
     "You are the skeptical founder again. Critique the CTO's technical architecture",
     "below from a product and business lens: Is it over-engineered for an MVP? Does",
@@ -70,6 +91,7 @@ export function claudeCritiquePrompt(run: Run, technicalArchitecture: string): s
     "",
     "## Idea brief",
     brief(run),
+    researchSection(research),
     "",
     "## Technical architecture (from the CTO)",
     technicalArchitecture,
@@ -79,7 +101,11 @@ export function claudeCritiquePrompt(run: Run, technicalArchitecture: string): s
 }
 
 /** Step 4 — Codex critiques Claude's product strategy. */
-export function codexCritiquePrompt(run: Run, productStrategy: string): string {
+export function codexCritiquePrompt(
+  run: Run,
+  productStrategy: string,
+  research?: string,
+): string {
   return [
     "You are the pragmatic CTO. Critique the product strategy below from an",
     "engineering-reality lens: Which assumptions are technically expensive or",
@@ -89,6 +115,7 @@ export function codexCritiquePrompt(run: Run, productStrategy: string): string {
     "",
     "## Idea brief",
     brief(run),
+    researchSection(research),
     "",
     "## Product strategy (from the strategist)",
     productStrategy,
@@ -106,6 +133,7 @@ export function finalSynthesisPrompt(
     claudeCritique: string;
     codexCritique: string;
   },
+  research?: string,
 ): string {
   return [
     "You are the lead synthesizer. Reconcile the strategy, architecture, and both",
@@ -121,11 +149,14 @@ export function finalSynthesisPrompt(
     "The top risks and assumptions, each with a mitigation.",
     "## Validation Tests",
     "Concrete experiments to validate the riskiest assumptions, with success metrics.",
+    "Where the market research provides real evidence (competitors, complaints, demand",
+    "signals), cite it and include the source link so each test is grounded.",
     "## Next Prompts",
     "Ready-to-paste prompts the founder can hand to an AI coding agent to start building.",
     "",
     "## Idea brief",
     brief(run),
+    researchSection(research),
     "",
     "## Product strategy",
     parts.productStrategy,

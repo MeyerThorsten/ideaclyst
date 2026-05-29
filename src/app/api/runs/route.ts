@@ -53,6 +53,7 @@ export async function POST(request: Request) {
     targetCustomer: typeof b.targetCustomer === "string" ? b.targetCustomer : undefined,
     constraints: typeof b.constraints === "string" ? b.constraints : undefined,
     preferredStack: typeof b.preferredStack === "string" ? b.preferredStack : undefined,
+    competitorUrls: typeof b.competitorUrls === "string" ? b.competitorUrls : undefined,
   };
 
   const run = await createRun(input);

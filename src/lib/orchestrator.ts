@@ -17,6 +17,7 @@ import {
   finalSynthesisPrompt,
 } from "./agents/prompts";
 import { splitFinalPlan } from "./runs/markdown";
+import { runMarketResearch } from "./research";
 
 function transcriptBlock(label: string, body: string): string {
   return `\n\n---\n\n## ${label}\n\n${body.trim()}\n`;
@@ -28,7 +29,7 @@ export async function startRun(runId: string): Promise<void> {
   if (run.status !== "queued") return; // already started/finished
 
   try {
-    run = await updateRun(runId, { status: "running", currentStep: "Product strategy" });
+    run = await updateRun(runId, { status: "running", currentStep: "Market research" });
     let transcript = `# Council transcript — ${run.title}\n`;
 
     const persistStep = async (
@@ -48,10 +49,21 @@ export async function startRun(runId: string): Promise<void> {
     const call = (agent: "claude" | "codex", prompt: string, stepKey: CouncilStepKey) =>
       runAgent(agent, prompt, { run: run as Run, stepKey });
 
+    // Step 0 — Web research (best-effort; never throws). Grounds every later step.
+    const research = await runMarketResearch(run, { competitorUrls: run.competitorUrls });
+    await writeRunFile(runId, "RESEARCH_FINDINGS.md", research.findings);
+    run = await persistStep(
+      { researchFindings: research.findings },
+      "Web Research",
+      research.findings,
+      "Product strategy",
+    );
+    const researchFindings = research.findings;
+
     // Step 1 — Claude: product strategy
     const productStrategy = await call(
       "claude",
-      productStrategyPrompt(run),
+      productStrategyPrompt(run, researchFindings),
       "productStrategy",
     );
     await writeRunFile(runId, "PRODUCT_STRATEGY.md", productStrategy);
@@ -65,7 +77,7 @@ export async function startRun(runId: string): Promise<void> {
     // Step 2 — Codex: technical architecture (sees Claude's strategy)
     const technicalArchitecture = await call(
       "codex",
-      technicalArchitecturePrompt(run, productStrategy),
+      technicalArchitecturePrompt(run, productStrategy, researchFindings),
       "technicalArchitecture",
     );
     await writeRunFile(runId, "TECHNICAL_ARCHITECTURE.md", technicalArchitecture);
@@ -79,7 +91,7 @@ export async function startRun(runId: string): Promise<void> {
     // Step 3 — Claude: critique of Codex's plan
     const claudeCritique = await call(
       "claude",
-      claudeCritiquePrompt(run, technicalArchitecture),
+      claudeCritiquePrompt(run, technicalArchitecture, researchFindings),
       "claudeCritique",
     );
     run = await persistStep(
@@ -92,7 +104,7 @@ export async function startRun(runId: string): Promise<void> {
     // Step 4 — Codex: critique of Claude's strategy
     const codexCritique = await call(
       "codex",
-      codexCritiquePrompt(run, productStrategy),
+      codexCritiquePrompt(run, productStrategy, researchFindings),
       "codexCritique",
     );
     run = await persistStep(
@@ -111,12 +123,16 @@ export async function startRun(runId: string): Promise<void> {
     // Step 5 — Claude: final synthesis
     const finalPlan = await call(
       "claude",
-      finalSynthesisPrompt(run, {
-        productStrategy,
-        technicalArchitecture,
-        claudeCritique,
-        codexCritique,
-      }),
+      finalSynthesisPrompt(
+        run,
+        {
+          productStrategy,
+          technicalArchitecture,
+          claudeCritique,
+          codexCritique,
+        },
+        researchFindings,
+      ),
       "finalPlan",
     );
     await writeRunFile(runId, "FINAL_PLAN.md", finalPlan);

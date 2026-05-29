@@ -15,6 +15,8 @@ export type RunStatus = "queued" | "running" | "completed" | "failed";
  * client sees them appear progressively.
  */
 export interface RunOutputs {
+  // Web research gathered before the council deliberates (Markdown):
+  researchFindings: string;
   productStrategy: string;
   technicalArchitecture: string;
   claudeCritique: string;
@@ -37,6 +39,8 @@ export interface Run {
   targetCustomer?: string;
   constraints?: string;
   preferredStack?: string;
+  /** Optional competitor URLs to deep-recon during research (comma/newline list). */
+  competitorUrls?: string;
   goal: RunGoal;
   status: RunStatus;
   createdAt: string;
@@ -54,6 +58,7 @@ export interface CreateRunInput {
   targetCustomer?: string;
   constraints?: string;
   preferredStack?: string;
+  competitorUrls?: string;
   goal: RunGoal;
 }
 
@@ -67,6 +72,7 @@ export const RUN_GOALS: RunGoal[] = [
 
 export function emptyOutputs(): RunOutputs {
   return {
+    researchFindings: "",
     productStrategy: "",
     technicalArchitecture: "",
     claudeCritique: "",
