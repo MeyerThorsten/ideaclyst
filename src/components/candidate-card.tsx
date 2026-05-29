@@ -5,12 +5,33 @@ import { useRouter } from "next/navigation";
 
 import { IdeaCandidate } from "@/lib/research/types";
 
+const EFFORT_CLS: Record<string, string> = {
+  low: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  moderate: "bg-amber-50 text-amber-700 ring-amber-200",
+  high: "bg-rose-50 text-rose-700 ring-rose-200",
+};
+const COMMERCIAL_CLS: Record<string, string> = {
+  strong: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  medium: "bg-amber-50 text-amber-700 ring-amber-200",
+  weak: "bg-zinc-100 text-zinc-600 ring-zinc-200",
+};
+
+function Badge({ label, value, cls }: { label: string; value: string; cls: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${cls}`}>
+      <span className="opacity-60">{label}</span> {value}
+    </span>
+  );
+}
+
 export default function CandidateCard({
   discoveryId,
   candidate,
+  rank,
 }: {
   discoveryId: string;
   candidate: IdeaCandidate;
+  rank?: number;
 }) {
   const router = useRouter();
   const [promoting, setPromoting] = useState(false);
@@ -35,19 +56,44 @@ export default function CandidateCard({
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5">
-      <h3 className="text-lg font-semibold text-zinc-900">{candidate.title}</h3>
-      <p className="mt-1.5 text-sm text-zinc-600">{candidate.idea}</p>
-      {candidate.targetCustomer ? (
-        <p className="mt-2 text-xs text-zinc-500">
-          <span className="font-medium text-zinc-600">Who:</span> {candidate.targetCustomer}
-        </p>
+    <div className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-5">
+      <div className="flex items-start gap-2">
+        {rank ? (
+          <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-zinc-900 text-xs font-bold text-white">
+            {rank}
+          </span>
+        ) : null}
+        <h3 className="text-lg font-semibold leading-snug text-zinc-900">{candidate.title}</h3>
+      </div>
+
+      <p className="mt-2 text-sm text-zinc-600">{candidate.idea}</p>
+
+      {(candidate.buildEffort || candidate.commercial) ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {candidate.commercial ? (
+            <Badge label="commercial" value={candidate.commercial} cls={COMMERCIAL_CLS[candidate.commercial] || COMMERCIAL_CLS.weak} />
+          ) : null}
+          {candidate.buildEffort ? (
+            <Badge label="build" value={candidate.buildEffort} cls={EFFORT_CLS[candidate.buildEffort] || EFFORT_CLS.moderate} />
+          ) : null}
+        </div>
       ) : null}
-      {candidate.signal ? (
-        <p className="mt-1 text-xs text-zinc-500">
-          <span className="font-medium text-zinc-600">Signal:</span> {candidate.signal}
-        </p>
-      ) : null}
+
+      <dl className="mt-3 space-y-1.5 text-xs text-zinc-500">
+        {candidate.targetCustomer ? (
+          <div><dt className="inline font-medium text-zinc-600">Who pays: </dt><dd className="inline">{candidate.targetCustomer}</dd></div>
+        ) : null}
+        {candidate.fit ? (
+          <div><dt className="inline font-medium text-zinc-600">Fit: </dt><dd className="inline">{candidate.fit}</dd></div>
+        ) : null}
+        {candidate.risk ? (
+          <div><dt className="inline font-medium text-zinc-600">Risk: </dt><dd className="inline">{candidate.risk}</dd></div>
+        ) : null}
+        {candidate.signal ? (
+          <div><dt className="inline font-medium text-zinc-600">Signal: </dt><dd className="inline">{candidate.signal}</dd></div>
+        ) : null}
+      </dl>
+
       {candidate.sourceUrl ? (
         <a
           href={candidate.sourceUrl}
@@ -59,7 +105,7 @@ export default function CandidateCard({
         </a>
       ) : null}
 
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-4 flex items-center gap-3 pt-1">
         <button
           onClick={promote}
           disabled={promoting}

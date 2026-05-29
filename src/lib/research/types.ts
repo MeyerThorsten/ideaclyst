@@ -25,12 +25,19 @@ export interface ResearchResult {
   sources: ResearchSource[];
 }
 
+export type EffortLevel = "low" | "moderate" | "high";
+export type CommercialStrength = "strong" | "medium" | "weak";
+
 export interface IdeaCandidate {
   id: string;
   title: string;
-  idea: string;
-  targetCustomer?: string;
-  signal?: string; // why it surfaced
+  idea: string; // the wedge / what it does in 1–2 sentences
+  targetCustomer?: string; // who pays
+  buildEffort?: EffortLevel;
+  commercial?: CommercialStrength;
+  risk?: string; // the main risk, one line
+  fit?: string; // why it fits the stated goal + capacity
+  signal?: string; // the demand signal that surfaced it
   sourceUrl?: string;
 }
 
@@ -39,4 +46,20 @@ export interface DiscoveryScoutResult {
   degraded: boolean;
   note?: string;
   sources: ResearchSource[];
+}
+
+/** The founder's brief for an idea-discovery run. */
+export interface DiscoveryBrief {
+  domain: string;
+  goal: string; // commercial | portfolio | learning | personal
+  capacity: string; // solo-pro | solo-learning | team | ai-assisted
+  constraints?: string;
+}
+
+export interface DiscoveryOutput {
+  marketRead: string;
+  candidates: IdeaCandidate[];
+  sources: ResearchSource[];
+  degraded: boolean;
+  note?: string;
 }

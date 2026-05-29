@@ -46,9 +46,13 @@ export async function createDiscovery(input: CreateDiscoveryInput): Promise<Disc
   const d: Discovery = {
     id,
     domain: input.domain.trim(),
+    goal: input.goal,
+    capacity: input.capacity,
+    constraints: input.constraints?.trim() || undefined,
     status: "queued",
     createdAt: now,
     updatedAt: now,
+    marketRead: "",
     candidates: [],
     scoutNotes: "",
   };

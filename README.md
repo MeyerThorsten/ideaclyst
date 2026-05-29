@@ -149,15 +149,24 @@ candidates, grounded in live demand signals instead of a blank page.
 
 **The flow** (`/discover`):
 
-1. **Name a market** — a domain or space (e.g. *"tools for indie game studios"*,
-   *"AI for accountants"*) rather than a finished idea.
+1. **Brief it** — a market or space (e.g. *"visionOS apps"*, *"AI for accountants"*) **plus
+   your goal** (commercial · portfolio · learning · personal) and **build capacity** (solo ·
+   team · AI-assisted), and any constraints. These shape the whole result.
 2. **Scout** — headless Chrome (surfagent) sweeps curated sources — **Hacker News, Product
    Hunt, Reddit, GitHub trending** — for problems, *"I wish there was…"* posts, and recent
    launches. Each source is best-effort and skipped-with-note if it's walled or blocked.
-3. **Synthesize** — Claude turns the scouted signals into **4–6 candidate ideas**, each with a
-   sharp wedge, a target customer, the **signal** that surfaced it, and a **source link**.
-4. **Promote to council** — one click turns a candidate into a normal run, which then runs its
+3. **Market read** — Claude writes an **honest, sourced read** of the space first: a one-line
+   verdict, demand signals, competition, who actually pays, and a realistic outlook for *your*
+   goal — not blind optimism.
+4. **Ranked concepts** — then **5–7 candidate ideas, ranked best-fit-first**, each carrying a
+   wedge, **who pays**, **build effort** (low/moderate/high for your capacity), **commercial
+   strength** (strong/medium/weak for your goal), the **biggest risk**, **why it fits**, and the
+   **signal + source** that surfaced it.
+5. **Promote to council** — one click turns a candidate into a normal run, which then runs its
    own market-research Step 0 and the full 5-step council.
+
+Each stage is **persisted progressively** (scout → market read → concepts), so the page reveals
+them live like a council run.
 
 **How it's built**
 

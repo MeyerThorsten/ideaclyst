@@ -14,9 +14,22 @@ import { ensureChrome, releaseChrome } from "./chrome";
 import { reconUrl } from "./recon";
 import { readUrl } from "./read";
 import { webSearch } from "./search";
-import { marketResearchSynthesisPrompt, discoverySynthesisPrompt } from "./synthesize";
-import { mockMarketResearch, mockCompetitorTeardown, mockDiscoveryCandidates } from "./mock";
-import { ResearchResult, ResearchSource, IdeaCandidate, DiscoveryScoutResult } from "./types";
+import { marketResearchSynthesisPrompt, marketReadPrompt, candidatesPrompt } from "./synthesize";
+import {
+  mockMarketResearch,
+  mockCompetitorTeardown,
+  mockMarketRead,
+  mockDiscoveryCandidates,
+} from "./mock";
+import {
+  ResearchResult,
+  ResearchSource,
+  IdeaCandidate,
+  DiscoveryScoutResult,
+  DiscoveryBrief,
+  EffortLevel,
+  CommercialStrength,
+} from "./types";
 
 export type ResearchMode = "mock" | "live";
 
@@ -209,50 +222,85 @@ async function liveScout(queries: string[]): Promise<DiscoveryScoutResult> {
   }
 }
 
-/**
- * Discover candidate ideas for a domain. In mock mode returns deterministic
- * candidates; in live mode scouts the web and synthesizes via the agent seam.
- * Always resolves.
- */
-export async function discoverIdeas(
-  domain: string,
-): Promise<{ candidates: IdeaCandidate[]; sources: ResearchSource[]; degraded: boolean; note?: string }> {
-  if (researchMode() === "mock") {
-    return { candidates: mockDiscoveryCandidates(domain), sources: [], degraded: true, note: "Mock mode — offline candidates." };
-  }
+function discoveryQueries(brief: DiscoveryBrief): string[] {
+  const d = brief.domain;
+  const q = [
+    `${d} problems people complain about`,
+    `${d} "I wish there was" OR frustrating`,
+    `new ${d} apps launch ${brief.goal === "commercial" ? "revenue market" : ""}`.trim(),
+  ];
+  if (brief.goal === "commercial") q.push(`${d} market size demand 2026`);
+  return q;
+}
 
+/** Stage 1 — scout the web for the brief (mock → empty; live → real sources). */
+export async function scoutMarket(brief: DiscoveryBrief): Promise<DiscoveryScoutResult> {
+  if (researchMode() === "mock") {
+    return { ok: false, degraded: true, note: "Mock mode — offline.", sources: [] };
+  }
   try {
-    const queries = [
-      `${domain} startup ideas problems`,
-      `${domain} "I wish there was" OR complaint`,
-      `new ${domain} tools launch`,
-    ];
-    const scout = await withTimeout(
-      liveScout(queries),
+    return await withTimeout(
+      liveScout(discoveryQueries(brief)),
       num("IDEACLYST_RESEARCH_BUDGET_MS", 60_000),
-      "discovery budget",
+      "discovery scout budget",
     );
-    if (!scout.sources.length) {
-      return { candidates: mockDiscoveryCandidates(domain), sources: [], degraded: true, note: scout.note || "No sources; offline candidates." };
-    }
-    const prompt = discoverySynthesisPrompt(domain, scout.sources);
-    // Reuse a synthetic Run as the agent context (mock path ignores it; cli uses prompt).
-    const ctxRun = { id: "discovery", title: domain, idea: domain } as unknown as Run;
-    const raw = await runAgent("claude", prompt, { run: ctxRun, stepKey: "marketResearch" });
-    const candidates = parseCandidates(raw, domain);
-    if (!candidates.length) {
-      return { candidates: mockDiscoveryCandidates(domain), sources: scout.sources, degraded: true, note: "Synthesis returned no candidates; offline candidates." };
-    }
-    return { candidates, sources: scout.sources, degraded: scout.degraded, note: scout.note };
   } catch (err) {
     const reason = err instanceof Error ? err.message : "unknown error";
-    return { candidates: mockDiscoveryCandidates(domain), sources: [], degraded: true, note: `Live discovery unavailable (${reason}).` };
+    return { ok: false, degraded: true, note: `Scout unavailable (${reason}).`, sources: [] };
   }
 }
 
-function parseCandidates(raw: string, domain: string): IdeaCandidate[] {
+/** Stage 2 — an honest, sourced market read (falls back to offline read). */
+export async function marketReadFor(
+  brief: DiscoveryBrief,
+  sources: ResearchSource[],
+): Promise<string> {
+  if (researchMode() === "mock" || sources.length === 0) {
+    return mockMarketRead(brief);
+  }
+  try {
+    const ctxRun = { id: "discovery", title: brief.domain, idea: brief.domain } as unknown as Run;
+    const md = await runAgent("claude", marketReadPrompt(brief, sources), {
+      run: ctxRun,
+      stepKey: "marketResearch",
+    });
+    return md.trim() || mockMarketRead(brief);
+  } catch {
+    return mockMarketRead(brief);
+  }
+}
+
+/** Stage 3 — ranked, structured candidate concepts (falls back to offline). */
+export async function candidatesFor(
+  brief: DiscoveryBrief,
+  sources: ResearchSource[],
+  marketRead: string,
+): Promise<IdeaCandidate[]> {
+  if (researchMode() === "mock" || sources.length === 0) {
+    return mockDiscoveryCandidates(brief);
+  }
+  try {
+    const ctxRun = { id: "discovery", title: brief.domain, idea: brief.domain } as unknown as Run;
+    const raw = await runAgent("claude", candidatesPrompt(brief, sources, marketRead), {
+      run: ctxRun,
+      stepKey: "marketResearch",
+    });
+    const parsed = parseCandidates(raw);
+    return parsed.length ? parsed : mockDiscoveryCandidates(brief);
+  } catch {
+    return mockDiscoveryCandidates(brief);
+  }
+}
+
+function oneOf<T extends string>(v: unknown, allowed: readonly T[]): T | undefined {
+  return typeof v === "string" && (allowed as readonly string[]).includes(v) ? (v as T) : undefined;
+}
+
+function parseCandidates(raw: string): IdeaCandidate[] {
   const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const jsonText = fence ? fence[1] : raw;
+  const efforts: readonly EffortLevel[] = ["low", "moderate", "high"];
+  const strengths: readonly CommercialStrength[] = ["strong", "medium", "weak"];
   try {
     const arr = JSON.parse(jsonText.trim()) as Array<Record<string, unknown>>;
     if (!Array.isArray(arr)) return [];
@@ -264,11 +312,14 @@ function parseCandidates(raw: string, domain: string): IdeaCandidate[] {
         title: String(c.title),
         idea: String(c.idea),
         targetCustomer: typeof c.targetCustomer === "string" ? c.targetCustomer : undefined,
+        buildEffort: oneOf(c.buildEffort, efforts),
+        commercial: oneOf(c.commercial, strengths),
+        risk: typeof c.risk === "string" ? c.risk : undefined,
+        fit: typeof c.fit === "string" ? c.fit : undefined,
         signal: typeof c.signal === "string" ? c.signal : undefined,
         sourceUrl: typeof c.sourceUrl === "string" && c.sourceUrl ? c.sourceUrl : undefined,
       }));
   } catch {
-    void domain;
     return [];
   }
 }

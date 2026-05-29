@@ -6,7 +6,7 @@
 
 import { Run } from "../runs/types";
 import { slugify } from "../utils";
-import { ResearchResult, IdeaCandidate } from "./types";
+import { ResearchResult, IdeaCandidate, DiscoveryBrief } from "./types";
 
 function customer(run: Run): string {
   return run.targetCustomer || "the target customer";
@@ -51,33 +51,62 @@ export function mockCompetitorTeardown(urls: string[]): string {
   return `## Competitor teardown\n${items}`;
 }
 
-export function mockDiscoveryCandidates(domain: string): IdeaCandidate[] {
-  const d = domain.trim() || "this market";
-  const seeds: Array<{ title: string; idea: string; customer: string; signal: string }> = [
+export function mockMarketRead(brief: DiscoveryBrief, note = MOCK_NOTE): string {
+  const d = brief.domain.trim() || "this market";
+  return `**Honest read: ${d} is workable but under-served — win on focus, not breadth.**
+
+## Demand signals
+People in ${d} repeatedly improvise with spreadsheets and generic SaaS, and ask the same
+"how do I…" questions — a durable problem rather than a fad.
+
+## Competition
+A few heavyweight incumbents treat this as one feature among many (capable, slow to adopt),
+plus cheaper niche tools that solve only part of the job. The real competitor is the manual
+status quo.
+
+## Who pays
+${brief.goal === "commercial" ? "Operators and small teams with budget when the pain maps to lost time or revenue." : "Early adopters and enthusiasts; monetization is secondary to the stated goal."}
+
+## Outlook
+For ${brief.capacity.replace("-", " ")}, a ruthless wedge with a fast "first win" is the
+realistic path. Assume switching cost — not awareness — is the main barrier.
+
+> _${note}_`;
+}
+
+export function mockDiscoveryCandidates(brief: DiscoveryBrief): IdeaCandidate[] {
+  const d = brief.domain.trim() || "this market";
+  const seeds: Array<Omit<IdeaCandidate, "id">> = [
     {
       title: `${d} onboarding autopilot`,
-      idea: `A tool that removes the most painful manual setup step for newcomers in ${d}, getting them to a first win in minutes.`,
-      customer: `New teams adopting ${d} tooling`,
+      idea: `Removes the most painful manual setup step for newcomers in ${d}, getting them to a first win in minutes.`,
+      targetCustomer: `New teams adopting ${d} tooling`,
+      buildEffort: "low",
+      commercial: brief.goal === "commercial" ? "strong" : "medium",
+      risk: "Habit change — people may tolerate the current setup pain.",
+      fit: `Small surface, fast to ship — good fit for ${brief.capacity.replace("-", " ")}.`,
       signal: "Repeated 'how do I get started' threads in community forums.",
     },
     {
       title: `${d} signal digest`,
-      idea: `A daily digest that watches the noisy sources in ${d} and surfaces only what a busy operator must act on.`,
-      customer: `Operators and managers in ${d}`,
+      idea: `Watches the noisy sources in ${d} and surfaces only what a busy operator must act on, daily.`,
+      targetCustomer: `Operators and managers in ${d}`,
+      buildEffort: "moderate",
+      commercial: "medium",
+      risk: "Source access / rate limits; value must beat skimming feeds manually.",
+      fit: "Mostly data plumbing + a clean digest — manageable scope.",
       signal: "People manually skimming multiple feeds and complaining about overload.",
     },
     {
       title: `${d} compliance copilot`,
-      idea: `An assistant that turns the recurring, error-prone checklist work in ${d} into a guided, auditable flow.`,
-      customer: `Small teams in ${d} without dedicated ops`,
+      idea: `Turns the recurring, error-prone checklist work in ${d} into a guided, auditable flow.`,
+      targetCustomer: `Small teams in ${d} without dedicated ops`,
+      buildEffort: "moderate",
+      commercial: brief.goal === "commercial" ? "strong" : "weak",
+      risk: "Requires trust; sales cycle longer for anything compliance-adjacent.",
+      fit: "Clear willingness to pay, but needs a credible, narrow first checklist.",
       signal: "Spreadsheets-as-process and frequent 'did we miss something?' posts.",
     },
   ];
-  return seeds.map((s) => ({
-    id: slugify(s.title),
-    title: s.title,
-    idea: s.idea,
-    targetCustomer: s.customer,
-    signal: s.signal,
-  }));
+  return seeds.map((s) => ({ id: slugify(s.title), ...s }));
 }
