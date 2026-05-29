@@ -16,6 +16,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
           <nav className="flex items-center gap-1 text-sm">
             <Link
+              href="/discover"
+              className="rounded-md px-3 py-1.5 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+            >
+              Discover
+            </Link>
+            <Link
               href="/runs"
               className="rounded-md px-3 py-1.5 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
             >

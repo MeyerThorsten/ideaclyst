@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IdeaClyst × surfagent — Implementation Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#f3ede1; --paper-2:#ece4d4; --card:#fbf7ee; --ink:#1d160d; --ink-soft:#463c30;
+    --muted:#8a7d6b; --line:#d8cdb8; --line-strong:#c4b69b; --ember:#d6451f; --ember-dark:#b3360f;
+    --claude:#b8542f; --codex:#2f6f5e; --gold:#9a7a1e; --ink-deep:#181208;
+    --display:"Fraunces",Georgia,serif; --body:"Newsreader",Georgia,serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+    --shadow:0 1px 0 rgba(255,255,255,.6) inset,0 16px 36px -24px rgba(40,28,12,.5);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(50rem 32rem at 100% -8%,rgba(47,111,94,.06),transparent 55%),radial-gradient(48rem 30rem at -8% 0%,rgba(214,69,31,.07),transparent 55%);}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.035;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .wrap{max-width:880px;margin:0 auto;padding:0 clamp(1.2rem,4vw,2rem) 6rem;}
+  header.hero{padding:clamp(3.5rem,7vw,5.5rem) 0 2.5rem;border-bottom:1px solid var(--line);}
+  .eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.28em;text-transform:uppercase;color:var(--ember);display:flex;align-items:center;gap:.7rem;}
+  .eyebrow::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,var(--line-strong),transparent);}
+  h1{font-family:var(--display);font-weight:900;font-size:clamp(2.3rem,6vw,3.8rem);line-height:1.0;letter-spacing:-.035em;margin:1.2rem 0 .4rem;overflow-wrap:break-word;}
+  h1 .x{color:var(--ember);}
+  .sub{font-size:clamp(1.05rem,2.2vw,1.3rem);color:var(--ink-soft);max-width:54ch;margin:.4rem 0 0;}
+  .meta{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.6rem;}
+  .pill{font-family:var(--mono);font-size:.7rem;padding:.38rem .75rem;border:1px solid var(--line-strong);border-radius:100px;background:var(--card);color:var(--ink-soft);}
+  .pill b{color:var(--ember);}
+  h2{font-family:var(--display);font-weight:600;font-size:clamp(1.5rem,3.4vw,2.1rem);letter-spacing:-.02em;line-height:1.1;margin:2.8rem 0 .3rem;scroll-margin-top:1.5rem;overflow-wrap:break-word;}
+  h2 .num{font-family:var(--mono);font-size:.72rem;color:var(--ember);letter-spacing:.1em;vertical-align:super;margin-right:.55rem;}
+  .rule{height:1px;background:var(--line);margin:.9rem 0 1.3rem;}
+  h3{font-family:var(--display);font-weight:600;font-size:1.18rem;letter-spacing:-.01em;margin:1.8rem 0 .4rem;}
+  p{margin:0 0 1rem;max-width:70ch;}
+  ul,ol{padding-left:1.3rem;max-width:70ch;}
+  li{margin:.32rem 0;}
+  strong{font-weight:600;}
+  code:not(pre code){font-family:var(--mono);font-size:.82em;background:var(--paper-2);border:1px solid var(--line);border-radius:5px;padding:.06em .38em;color:var(--ink);}
+  pre{background:#211a10;color:#ece2cf;border-radius:12px;padding:1.1rem 1.3rem;overflow-x:auto;font-family:var(--mono);font-size:.8rem;line-height:1.7;margin:1.1rem 0;border:1px solid #34291a;box-shadow:0 18px 36px -28px rgba(0,0,0,.6);}
+  pre .c{color:#7f7560;font-style:italic;}
+  .callout{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ember);border-radius:10px;padding:1rem 1.2rem;margin:1.4rem 0;box-shadow:var(--shadow);}
+  .callout.warn{border-left-color:var(--gold);}
+  .callout p{margin:0;max-width:none;font-size:.95rem;}
+  .phase{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.2rem 1.4rem;margin:1.1rem 0;box-shadow:var(--shadow);}
+  .phase h2{margin-top:.2rem;}
+  .tag{display:inline-block;font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;padding:.2rem .55rem;border-radius:6px;background:var(--paper-2);border:1px solid var(--line);color:var(--ember);margin-bottom:.4rem;}
+  footer{margin-top:3.5rem;padding-top:1.6rem;border-top:1px solid var(--line);font-family:var(--mono);font-size:.72rem;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:.6rem;}
+  footer a{color:var(--ember);}
+  a{color:var(--ember);text-underline-offset:3px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Implementation Plan · Draft</div>
+    <h1>Idea<span class="x">Clyst</span> × surfagent</h1>
+    <p class="sub">Web Research &amp; Idea Discovery — grounding the council in live web data and turning IdeaClyst into a way to <em>find</em> ideas, not just evaluate them.</p>
+    <div class="meta">
+      <span class="pill">Vendor <b>surfagent</b> CDP</span>
+      <span class="pill">4 features</span>
+      <span class="pill">Mock-first, <b>best-effort</b> live</span>
+      <span class="pill">+1 dep: chrome-remote-interface</span>
+    </div>
+  </header>
+
+  <h2>Context</h2>
+  <div class="rule"></div>
+  <p>IdeaClyst currently turns a <em>given</em> idea into a founder packet via a 5-step Claude+Codex council, but it has no contact with the real world — strategy and validation rest on the models' priors. <strong>surfagent</strong> (sibling project at <code>/Users/thorstenmeyer/Dev/surfagent</code>) is a pure-CDP browser-automation toolkit that headlessly opens pages and returns structured "recon" data. By <strong>vendoring surfagent's read-only CDP modules into IdeaClyst</strong> we can ground the council in live web data and add a way to discover ideas.</p>
+  <p>Goal (per user): build <strong>all four</strong> capabilities in one pass, vendoring the code:</p>
+  <ol>
+    <li><strong>Market Research (Step 0)</strong> — ground the council in real web data.</li>
+    <li><strong>Idea Discovery mode</strong> — scout sources to propose &amp; rank candidate ideas.</li>
+    <li><strong>Validation evidence</strong> — back the Validation Tests section with real signals + links.</li>
+    <li><strong>Competitor teardown</strong> — recon competitor landing pages to sharpen differentiation.</li>
+  </ol>
+  <div class="callout warn"><p><strong>Hard constraints (do not regress):</strong> the only mode seam stays <code>IDEACLYST_AGENT_MODE</code> (mock default / cli) — research <strong>follows</strong> it (cli→live Chrome, mock→offline) with an optional <code>IDEACLYST_RESEARCH_MODE</code> override. Research is <strong>best-effort and never throws into a run</strong> (missing/blocked Chrome → labeled note, council still completes). Default mock experience stays fully offline; disk stays the source of truth.</p></div>
+
+  <h2>Architecture</h2>
+  <div class="rule"></div>
+  <p>Vendor surfagent's pure-CDP, read-only modules into <code>src/lib/research/</code>, wrap them in a lazily-launched, reference-counted <strong>headless Chrome lifecycle manager</strong>, and expose one mode-aware seam (<code>src/lib/research/index.ts</code>) mirroring <code>src/lib/agents/index.ts</code>. Live research synthesizes raw recon snippets into Markdown via the existing <code>runAgent("claude", …)</code> call; mock research returns deterministic idea-aware Markdown. Features A/C/D extend the existing council; Feature B is a parallel discovery store + orchestrator that reuses the research seam and <code>createRun</code>/<code>startRun</code> to promote a chosen candidate into a normal run.</p>
+
+  <div class="phase">
+    <span class="tag">Phase 1</span>
+    <h2><span class="num">01</span>Vendor the research module</h2>
+    <p>Add dep: <code>npm i chrome-remote-interface@^0.33.0</code>. New files in <code>src/lib/research/</code> (vendored, ESM <code>.js</code> extensions dropped, HTTP-server/commander stripped, read-only only):</p>
+    <ul>
+      <li><code>connector.ts</code> ← surfagent <code>chrome/connector.ts</code> (<code>listTargets</code>, <code>connectToTab</code>).</li>
+      <li><code>tabs.ts</code> ← surfagent <code>chrome/tabs.ts</code>.</li>
+      <li><code>recon.ts</code> ← surfagent <code>api/recon.ts</code> (<code>reconUrl</code>, <code>ReconResult</code>, keep <code>EXTRACTION_SCRIPT</code>; force <code>keepTab:false</code>).</li>
+      <li><code>read.ts</code> ← <strong>only</strong> <code>readPage</code> from <code>api/act.ts</code> (drop all mutators).</li>
+      <li><code>chrome.ts</code> ← <strong>new</strong> lifecycle manager: <code>ensureChrome()</code> launches <code>--headless=new</code> on a dedicated profile; vendored <code>checkCDP</code>/<code>waitForCDP</code>; refcount + idle reaper + exit cleanup.</li>
+      <li><code>search.ts</code> ← <strong>new</strong> <code>webSearch()</code> → <code>WebSearchResult[]</code>, DuckDuckGo HTML default (Bing fallback).</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <span class="tag">Phase 2</span>
+    <h2><span class="num">02</span>Research seam + mock</h2>
+    <ul>
+      <li><code>research/types.ts</code> — <code>WebSearchResult</code>, <code>ResearchSource</code>, <code>ResearchResult{ok,degraded,note?,findings,sources[]}</code>, discovery types.</li>
+      <li><code>research/mock.ts</code> — deterministic, idea-aware, <strong>no-network</strong> generators.</li>
+      <li><code>research/synthesize.ts</code> — prompt builders; live path calls <code>runAgent("claude", …, {stepKey:"marketResearch"})</code>. Scraped text wrapped in a delimited <strong>"untrusted web content"</strong> block (prompt-injection guard).</li>
+      <li><code>research/index.ts</code> — <code>researchMode()</code> (override → else follow <code>agentMode()</code>); all calls try/catch → degraded fallback; <code>Promise.race</code> budget + caps.</li>
+      <li>Extend <code>CouncilStepKey</code> with <code>"marketResearch"</code> in agents <code>index.ts</code> + <code>mock.ts</code> GENERATORS.</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <span class="tag">Phase 3 · Feature A</span>
+    <h2><span class="num">03</span>Market Research as Step 0</h2>
+    <ul>
+      <li><code>runs/types.ts</code> — add <code>researchFindings: string</code> (first) to <code>RunOutputs</code> + <code>emptyOutputs()</code>.</li>
+      <li><code>orchestrator.ts</code> — Step 0: <code>runMarketResearch(run)</code> → <code>writeRunFile("RESEARCH_FINDINGS.md")</code> → <code>persistStep(…, "Market Research", …, "Product strategy")</code>; thread findings into the 4 downstream prompts.</li>
+      <li><code>agents/prompts.ts</code> — optional <code>research?</code> param; inject a <code>## Market research</code> section when non-empty.</li>
+      <li>UI: <code>result-tabs.tsx</code> Research tab (2nd); <code>runs/[runId]/page.tsx</code> prepend <code>"Market research"</code> to <code>STEP_FLOW</code>.</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <span class="tag">Phase 4 · Feature C</span>
+    <h2><span class="num">04</span>Validation evidence</h2>
+    <p>Pass <code>research.sources</code> (with URLs) into <code>finalSynthesisPrompt</code>; instruct the synthesizer to cite concrete evidence + source links in the <strong>Validation Tests</strong> section. No new output field (links live inside <code>validationTests</code>/<code>researchFindings</code>); optional "Sources" list at the bottom of the Research tab.</p>
+  </div>
+
+  <div class="phase">
+    <span class="tag">Phase 5 · Feature D</span>
+    <h2><span class="num">05</span>Competitor teardown</h2>
+    <ul>
+      <li><code>runs/types.ts</code> + <code>CreateRunInput</code> — optional <code>competitorUrls?: string</code>.</li>
+      <li><code>idea-form.tsx</code> + <code>api/runs/route.ts</code> — collect &amp; validate (URLs only; cap N).</li>
+      <li><code>research/index.ts</code> — when present, deep-recon those pages (pricing/features/positioning) and fold a "Competitor teardown" subsection into <code>researchFindings</code>; else discover via <code>webSearch</code>.</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <span class="tag">Phase 6 · Feature B</span>
+    <h2><span class="num">06</span>Idea Discovery mode</h2>
+    <ul>
+      <li><code>discovery/types.ts</code> — <code>Discovery</code>, <code>IdeaCandidate</code>, <code>CreateDiscoveryInput</code>.</li>
+      <li><code>discovery/store.ts</code> — disk store mirroring <code>runs/store.ts</code> under <code>.ideaclyst/discoveries/&lt;id&gt;/</code>.</li>
+      <li><code>discovery/sources.ts</code> — curated scout targets (HN, Product Hunt, Reddit, GitHub trending), each best-effort.</li>
+      <li><code>discovery/orchestrator.ts</code> — <code>startDiscovery(id)</code>: scout → <code>runAgent("claude", discoverySynthesisPrompt)</code> returning fenced <code>json</code> candidates (parsed); persist progressively.</li>
+      <li>Routes: <code>api/discoveries</code> (GET/POST), <code>…/[id]</code> (polled), <code>…/[id]/promote</code> (→ <code>createRun</code> + <code>startRun</code>).</li>
+      <li>Pages: <code>/discover</code>, <code>/discover/[id]</code> + <code>discovery-form</code> / <code>candidate-card</code> + "Discover" nav link.</li>
+    </ul>
+  </div>
+
+  <h2>New types &amp; config</h2>
+  <div class="rule"></div>
+<pre><span class="c">// research/types.ts</span>
+interface WebSearchResult { title: string; url: string; snippet: string }
+interface ResearchSource { url: string; title: string; summary: string; kind: "serp" | "page" }
+interface ResearchResult { ok: boolean; degraded: boolean; note?: string; findings: string; sources: ResearchSource[] }
+interface IdeaCandidate { id; title; idea; targetCustomer?; signal?; sourceUrl? }
+<span class="c">// runs/types.ts → RunOutputs: + researchFindings ;  CreateRunInput/Run: + competitorUrls?</span></pre>
+<pre><span class="c"># .env.example</span>
+IDEACLYST_RESEARCH_MODE=            <span class="c"># "" follow agent mode | mock | live</span>
+IDEACLYST_RESEARCH_ENGINE=duckduckgo
+IDEACLYST_CHROME_BIN=               <span class="c"># optional Chrome path override</span>
+IDEACLYST_RESEARCH_CDP_PORT=9222
+IDEACLYST_RESEARCH_TIMEOUT_MS=20000      <span class="c"># per recon</span>
+IDEACLYST_RESEARCH_BUDGET_MS=60000       <span class="c"># whole research step</span>
+IDEACLYST_RESEARCH_MAX_RESULTS=6
+IDEACLYST_RESEARCH_MAX_SOURCES=3
+IDEACLYST_RESEARCH_IDLE_MS=120000        <span class="c"># reap warm Chrome after idle</span></pre>
+  <p><strong>Reuse:</strong> <code>persistStep</code>, <code>writeRunFile</code>, <code>runAgent</code>, <code>renderMarkdown</code>, <code>createRun</code>/<code>startRun</code>, <code>makeRunId</code>/<code>slugify</code>.</p>
+
+  <h2>Risks &amp; mitigations</h2>
+  <div class="rule"></div>
+  <ul>
+    <li><strong>Anti-bot / captcha / headless detection</strong> → DuckDuckGo HTML default; never solve captchas; degrade on <code>captchas</code>/empty results; Bing fallback.</li>
+    <li><strong>Chrome missing / wrong path</strong> → caught → degrade to mock-with-note; run never fails; <code>IDEACLYST_CHROME_BIN</code> + auto-detect.</li>
+    <li><strong>Research stalls a run</strong> → per-recon timeout + overall <code>Promise.race</code> budget + caps.</li>
+    <li><strong>Chrome/tab leaks</strong> → single refcounted singleton, <code>keepTab:false</code>, idle reaper, exit cleanup, dedicated profile.</li>
+    <li><strong>Prompt injection from scraped pages</strong> → delimited "untrusted data" block in synthesis prompts.</li>
+    <li><strong>Login walls (Reddit/Product Hunt)</strong> → each source best-effort, skipped-with-note.</li>
+  </ul>
+
+  <h2>Verification (end-to-end)</h2>
+  <div class="rule"></div>
+  <ol>
+    <li><code>npm run typecheck</code> &amp;&amp; <code>npm run lint</code> — clean.</li>
+    <li><strong>Mock default (offline):</strong> create a run (optionally with competitor URLs) → Research tab populates first, council completes, Validation Tests cite (mock) evidence.</li>
+    <li><strong>Live path:</strong> <code>IDEACLYST_AGENT_MODE=cli</code> (Chrome present) → real DuckDuckGo-sourced links in <code>RESEARCH_FINDINGS.md</code>; a broken <code>IDEACLYST_CHROME_BIN</code> still completes with a degraded note.</li>
+    <li><strong>Discovery:</strong> <code>/discover</code> → candidate cards (deterministic in mock); "Promote to council" lands on a real run page.</li>
+    <li>No orphan Chrome after idle (<code>pgrep -f remote-debugging-port</code>).</li>
+  </ol>
+
+  <footer>
+    <span>IdeaClyst × surfagent · Implementation Plan</span>
+    <span><a href="https://ideaclyst.com">ideaclyst.com</a> · Powered by <a href="https://thorstenmeyerai.com/">Thorsten Meyer AI</a></span>
+  </footer>
+</div>
+</body>
+</html>

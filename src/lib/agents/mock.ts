@@ -9,6 +9,7 @@
 import { Run } from "../runs/types";
 
 export type CouncilStepKey =
+  | "marketResearch"
   | "productStrategy"
   | "technicalArchitecture"
   | "claudeCritique"
@@ -29,6 +30,27 @@ function customer(run: Run): string {
 
 function stack(run: Run): string {
   return run.preferredStack || "a TypeScript + Next.js + Postgres stack";
+}
+
+function marketResearch(run: Run): string {
+  return `## What the web suggests
+A scan of the space around "${run.idea}" shows ${customer(run)} already reaching for
+spreadsheets, generic SaaS, and a couple of point tools — a sign the pain is real but
+under-served, not unsolved.
+
+## Likely incumbents & alternatives
+- A heavyweight platform that does this as one feature among many (powerful, slow to adopt).
+- A cheaper niche tool that nails part of the job but lacks the wedge's "first win".
+- The status quo: manual process + spreadsheets, which is the real competitor to beat.
+
+## Demand signals
+- Recurring questions/complaints in the communities where ${customer(run)} gathers.
+- Steady (not spiking) search interest — a durable problem rather than a fad.
+- Adjacent tools showing healthy adoption, implying budget exists in this category.
+
+## Implications for strategy
+Differentiate on speed-to-value and a ruthless wedge; assume switching cost is the main
+barrier, not awareness.`;
 }
 
 function productStrategy(run: Run): string {
@@ -140,6 +162,7 @@ ${subject(run)} should launch as a focused, self-serve tool that nails one painf
 }
 
 const GENERATORS: Record<CouncilStepKey, (run: Run) => string> = {
+  marketResearch,
   productStrategy,
   technicalArchitecture,
   claudeCritique,

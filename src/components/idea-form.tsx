@@ -24,6 +24,7 @@ export default function IdeaForm() {
   const [targetCustomer, setTargetCustomer] = useState("");
   const [constraints, setConstraints] = useState("");
   const [preferredStack, setPreferredStack] = useState("");
+  const [competitorUrls, setCompetitorUrls] = useState("");
   const [goal, setGoal] = useState<RunGoal>("validate");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +43,7 @@ export default function IdeaForm() {
           targetCustomer,
           constraints,
           preferredStack,
+          competitorUrls,
           goal,
         }),
       });
@@ -124,6 +126,22 @@ export default function IdeaForm() {
           value={constraints}
           onChange={(e) => setConstraints(e.target.value)}
         />
+      </div>
+
+      <div>
+        <label htmlFor="competitorUrls" className={labelCls}>
+          Competitor URLs <span className="text-zinc-400">(optional)</span>
+        </label>
+        <input
+          id="competitorUrls"
+          className={inputCls}
+          placeholder="e.g. https://competitor.com, https://another.com"
+          value={competitorUrls}
+          onChange={(e) => setCompetitorUrls(e.target.value)}
+        />
+        <p className="mt-1 text-xs text-zinc-500">
+          The research step will recon these pages for a competitor teardown.
+        </p>
       </div>
 
       <div>

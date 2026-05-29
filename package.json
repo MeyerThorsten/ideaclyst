@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "chrome-remote-interface": "^0.33.3",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
