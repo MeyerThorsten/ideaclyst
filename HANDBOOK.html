@@ -216,6 +216,7 @@
       <a href="#architecture">Architecture</a>
       <div class="grp">The Mechanism</div>
       <a href="#council">The 5-step council</a>
+      <a href="#discovery">Idea Discovery</a>
       <a href="#lifecycle">Request lifecycle</a>
       <a href="#modes">Mock vs. CLI mode</a>
       <a href="#cli-calls">How CLI calls work</a>
@@ -428,6 +429,24 @@
         <div class="ic">↔</div>
         <div><p><strong>The cross-exchange is the point.</strong> Codex builds on Claude's strategy (step 2), then each critiques the <em>other's</em> domain (steps 3 &amp; 4), and Claude reconciles all four into a verdict (step 5). After every step the orchestrator rewrites <code>run.json</code> and a Markdown file, so the UI reveals outputs one at a time.</p></div>
       </div>
+    </section>
+
+    <!-- DISCOVERY -->
+    <section id="discovery">
+      <h2><span class="num">◆</span>Idea Discovery</h2>
+      <div class="section-rule"></div>
+      <p>Most of IdeaClyst evaluates an idea you bring. <strong>Idea Discovery</strong> (the <code>/discover</code> route) does the opposite — it <em>finds</em> ideas for you, grounded in what people are actually struggling with on the web. The blank page is the hardest part of building; Discovery replaces it with real demand signals.</p>
+      <div class="grid two">
+        <div class="feature"><div class="k">1 · Input</div><h4>You name a market</h4><p>A domain or space — “tools for indie game studios,” “AI for accountants” — instead of a finished idea.</p></div>
+        <div class="feature"><div class="k">2 · Scout</div><h4>Surfagent sweeps the web</h4><p>Headless Chrome scouts curated sources — Hacker News, Product Hunt, Reddit, GitHub trending — for problems, “I wish there was…”, and recent launches. Each source is best-effort and skipped-with-note if it's walled or blocked.</p></div>
+        <div class="feature"><div class="k">3 · Synthesize</div><h4>Claude proposes candidates</h4><p>The scouted signals become 4–6 candidate ideas, each with a sharp wedge, a target customer, the <em>signal</em> that surfaced it, and a source link.</p></div>
+        <div class="feature"><div class="k">4 · Promote</div><h4>One click to the council</h4><p>“Promote to council” turns a candidate into a normal run — which then runs its own market-research Step 0 and the full 5-step deliberation.</p></div>
+      </div>
+      <div class="note">
+        <div class="ic">◆</div>
+        <div><p><strong>A first-class feature.</strong> Like research, Discovery is mode-gated (deterministic offline candidates in mock; live scouting + synthesis in CLI mode) and best-effort — it <em>always</em> returns candidates, even offline or when a source is blocked.</p></div>
+      </div>
+      <p>Discoveries persist on disk under <code>.ideaclyst/discoveries/&lt;id&gt;/</code> (a <code>discovery.json</code> + <code>CANDIDATES.md</code>), and the discovery page polls live, just like a run. Code lives in <code>src/lib/discovery/</code> with the scout/synthesis in <code>src/lib/research/</code>.</p>
     </section>
 
     <!-- LIFECYCLE -->

@@ -127,8 +127,8 @@ data — and to help you *find* ideas, not just evaluate them.
   into a teardown section.
 - **Validation evidence** — the final synthesis cites the gathered sources (with links) in
   the Validation Tests section.
-- **Idea Discovery** (`/discover`) — give a market; surfagent scouts the web and proposes
-  candidate ideas you can **promote** straight into a full council run.
+- **Idea Discovery** (`/discover`) — don't have an idea yet? Give a market and IdeaClyst
+  finds candidate ideas for you. See its own section below.
 
 Research is **best-effort and mode-gated**, mirroring the agent seam:
 
@@ -139,6 +139,37 @@ Research is **best-effort and mode-gated**, mirroring the agent seam:
   budget. If Chrome is missing or a search is blocked, it **degrades to offline synthesis with
   a note — a run never fails because of research.** Requires a Chrome/Chromium install for the
   live path; mock needs nothing. See `.env.example` for all `IDEACLYST_RESEARCH_*` knobs.
+
+## Idea Discovery — find ideas, don't just evaluate them
+
+The hardest part of building isn't judging an idea — it's **finding one worth judging**.
+Idea Discovery flips IdeaClyst around: instead of evaluating an idea you bring, it scouts
+the real web for problems people are actually complaining about and proposes buildable
+candidates, grounded in live demand signals instead of a blank page.
+
+**The flow** (`/discover`):
+
+1. **Name a market** — a domain or space (e.g. *"tools for indie game studios"*,
+   *"AI for accountants"*) rather than a finished idea.
+2. **Scout** — headless Chrome (surfagent) sweeps curated sources — **Hacker News, Product
+   Hunt, Reddit, GitHub trending** — for problems, *"I wish there was…"* posts, and recent
+   launches. Each source is best-effort and skipped-with-note if it's walled or blocked.
+3. **Synthesize** — Claude turns the scouted signals into **4–6 candidate ideas**, each with a
+   sharp wedge, a target customer, the **signal** that surfaced it, and a **source link**.
+4. **Promote to council** — one click turns a candidate into a normal run, which then runs its
+   own market-research Step 0 and the full 5-step council.
+
+**How it's built**
+
+- New flow alongside runs: `src/lib/discovery/` (store + orchestrator), routes under
+  `/api/discoveries` (list/create, get, and `…/[id]/promote`), and pages at `/discover` and
+  `/discover/[id]`. The candidate scout/synthesis lives in `src/lib/research/`
+  (`discoverIdeas`).
+- **Mode-gated and best-effort**, exactly like research: deterministic offline candidates in
+  `mock`, live scouting + Claude synthesis in `cli`. It always returns candidates — even
+  offline or when a source is blocked.
+- Each discovery persists to disk under `.ideaclyst/discoveries/<id>/` (`discovery.json` +
+  `CANDIDATES.md`); the discovery page polls just like a run.
 
 ## Request lifecycle
 

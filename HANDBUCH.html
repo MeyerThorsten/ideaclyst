@@ -200,6 +200,7 @@
       <a href="#architecture">Architektur</a>
       <div class="grp">Der Mechanismus</div>
       <a href="#council">Der 5-Schritte-Council</a>
+      <a href="#discovery">Idea Discovery</a>
       <a href="#lifecycle">Ablauf einer Anfrage</a>
       <a href="#modes">Mock- vs. CLI-Modus</a>
       <a href="#cli-calls">Wie CLI-Aufrufe laufen</a>
@@ -412,6 +413,24 @@
         <div class="ic">↔</div>
         <div><p><strong>Der Kreuz-Austausch ist der Punkt.</strong> Codex baut auf Claudes Strategie auf (Schritt 2), dann kritisiert jeder die <em>Domäne des anderen</em> (Schritte 3 &amp; 4), und Claude führt alle vier zu einem Urteil zusammen (Schritt 5). Nach jedem Schritt schreibt der Orchestrator <code>run.json</code> und eine Markdown-Datei neu, sodass die UI die Ergebnisse nacheinander enthüllt.</p></div>
       </div>
+    </section>
+
+    <!-- DISCOVERY -->
+    <section id="discovery">
+      <h2><span class="num">◆</span>Idea Discovery</h2>
+      <div class="section-rule"></div>
+      <p>Der größte Teil von IdeaClyst bewertet eine Idee, die du mitbringst. <strong>Idea Discovery</strong> (die Route <code>/discover</code>) macht das Gegenteil — es <em>findet</em> Ideen für dich, geerdet in dem, womit Menschen im Web tatsächlich kämpfen. Das leere Blatt ist der schwerste Teil; Discovery ersetzt es durch echte Nachfrage-Signale.</p>
+      <div class="grid two">
+        <div class="feature"><div class="k">1 · Eingabe</div><h4>Du nennst einen Markt</h4><p>Eine Domäne oder ein Bereich — „Tools für Indie-Game-Studios“, „KI für Steuerberater“ — statt einer fertigen Idee.</p></div>
+        <div class="feature"><div class="k">2 · Scouten</div><h4>Surfagent durchsucht das Web</h4><p>Headless-Chrome durchsucht kuratierte Quellen — Hacker News, Product Hunt, Reddit, GitHub-Trending — nach Problemen, „I wish there was…“ und neuen Launches. Jede Quelle ist best-effort und wird mit Notiz übersprungen, wenn sie gesperrt/blockiert ist.</p></div>
+        <div class="feature"><div class="k">3 · Synthese</div><h4>Claude schlägt Kandidaten vor</h4><p>Aus den Signalen werden 4–6 Ideen-Kandidaten — jeder mit einem scharfen Wedge, einem Zielkunden, dem <em>Signal</em>, das ihn ans Licht brachte, und einem Quell-Link.</p></div>
+        <div class="feature"><div class="k">4 · Promote</div><h4>Ein Klick zum Council</h4><p>„Promote to council“ macht aus einem Kandidaten einen normalen Run — der dann seine eigene Marktrecherche (Schritt 0) und die vollen 5 Council-Schritte durchläuft.</p></div>
+      </div>
+      <div class="note">
+        <div class="ic">◆</div>
+        <div><p><strong>Eine Kernfunktion.</strong> Wie die Recherche ist Discovery modusabhängig (deterministische Offline-Kandidaten im Mock; Live-Scouting + Synthese im CLI-Modus) und best-effort — es liefert <em>immer</em> Kandidaten, auch offline oder wenn eine Quelle blockiert ist.</p></div>
+      </div>
+      <p>Discoveries werden auf Platte unter <code>.ideaclyst/discoveries/&lt;id&gt;/</code> gespeichert (eine <code>discovery.json</code> + <code>CANDIDATES.md</code>), und die Discovery-Seite pollt live, genau wie ein Run. Der Code liegt in <code>src/lib/discovery/</code>, Scout/Synthese in <code>src/lib/research/</code>.</p>
     </section>
 
     <!-- LIFECYCLE -->
