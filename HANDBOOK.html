@@ -132,6 +132,14 @@
   .step .dot { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-weight: 900; font-size: 1.4rem; color: #fff; box-shadow: 0 8px 18px -8px rgba(40,28,12,.6); z-index: 1; }
   .dot.claude { background: var(--claude); }
   .dot.codex { background: var(--codex); }
+  .dot.go { background: var(--ember); }
+  .step.go .body { border-top: 3px solid var(--ember); }
+  .cmd { display: block; font-family: var(--mono); font-size: .8rem; background: #211a10; color: #ece2cf; border-radius: 8px; padding: .55rem .85rem; margin-top: .7rem; overflow-x: auto; }
+  .cmd::before { content: "$ "; color: #e0904f; }
+  /* language switch */
+  .lang { display: inline-flex; gap: .3rem; margin-top: 1rem; font-family: var(--mono); font-size: .68rem; }
+  .lang a { text-decoration: none; padding: .2rem .6rem; border: 1px solid var(--line-strong); border-radius: 100px; color: var(--ink-soft); letter-spacing: .08em; }
+  .lang a.on { background: var(--ember); border-color: var(--ember); color: #fff; }
   .step .body { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem 1.3rem; box-shadow: var(--shadow); }
   .step.claude .body { border-top: 3px solid var(--claude); }
   .step.codex .body { border-top: 3px solid var(--codex); }
@@ -196,7 +204,10 @@
   <aside id="sidebar">
     <div class="brand">Idea<span class="clyst">Clyst</span></div>
     <div class="brand-sub">Field Manual · v0.1</div>
+    <div class="lang"><a href="HANDBOOK.html" class="on">EN</a><a href="HANDBUCH.html">DE</a></div>
     <nav class="toc" id="toc">
+      <div class="grp">Get going</div>
+      <a href="#walkthrough">Step-by-step guide</a>
       <div class="grp">Orientation</div>
       <a href="#overview">What it is</a>
       <a href="#features">Features at a glance</a>
@@ -231,6 +242,59 @@
         <span class="chip">No DB · No auth</span>
       </div>
     </header>
+
+    <!-- WALKTHROUGH -->
+    <section id="walkthrough">
+      <h2><span class="num">★</span>Step-by-step guide</h2>
+      <div class="section-rule"></div>
+      <p>The fastest path from a fresh clone to a finished planning packet. Mock mode is the default, so you need <strong>no CLIs</strong> to try it end to end.</p>
+      <div class="flow">
+        <div class="step go"><div class="dot go">1</div><div class="body">
+          <h4>Install dependencies</h4>
+          <p>From the project root:</p>
+          <span class="cmd">npm install</span>
+        </div></div>
+        <div class="step go"><div class="dot go">2</div><div class="body">
+          <h4>Create your config</h4>
+          <p>Copy the example env file. It defaults to <strong>mock mode</strong> — no CLIs required.</p>
+          <span class="cmd">cp .env.example .env.local</span>
+        </div></div>
+        <div class="step go"><div class="dot go">3</div><div class="body">
+          <h4>Start the dev server</h4>
+          <p>Then open <a href="http://localhost:5417">http://localhost:5417</a> in your browser.</p>
+          <span class="cmd">npm run dev</span>
+        </div></div>
+        <div class="step go"><div class="dot go">4</div><div class="body">
+          <h4>Start an idea session</h4>
+          <p>On the homepage, click <strong>“Start an Idea Session”</strong> to open the idea form (<code>/new</code>).</p>
+        </div></div>
+        <div class="step go"><div class="dot go">5</div><div class="body">
+          <h4>Describe your idea</h4>
+          <p>Give it a <strong>title</strong>, write the <strong>idea</strong> (at least a sentence, 10+ chars), and pick a <strong>goal</strong> — <code>validate · plan · build · pitch · refine</code>. Optionally add a target customer, constraints, or a preferred stack. Then submit.</p>
+        </div></div>
+        <div class="step go"><div class="dot go">6</div><div class="body">
+          <h4>Watch the council deliberate</h4>
+          <p>You land on the run page, which polls every 1.5s. The five steps light up as they run — <strong>✓</strong> done, <strong>▸</strong> active, <strong>○</strong> pending — and each output appears the moment it completes.</p>
+        </div></div>
+        <div class="step go"><div class="dot go">7</div><div class="body">
+          <h4>Read your packet</h4>
+          <p>When the run completes, the result tabs fill in: <strong>Summary, MVP Backlog, Risks, Validation Tests, Next Prompts</strong>. All past sessions live under <code>/runs</code>.</p>
+        </div></div>
+        <div class="step go"><div class="dot go">8</div><div class="body">
+          <h4>(Optional) Switch to the real CLIs</h4>
+          <p>For real model output, set <code>IDEACLYST_AGENT_MODE=cli</code> in <code>.env.local</code>, make sure both CLIs are installed and logged in, then restart the server and run a new session.</p>
+          <span class="cmd">claude --version &amp;&amp; codex login status</span>
+        </div></div>
+        <div class="step go"><div class="dot go">9</div><div class="body">
+          <h4>Find the files</h4>
+          <p>Every run is saved to disk under <code>.ideaclyst/runs/&lt;runId&gt;/</code> as <code>run.json</code> plus Markdown artifacts you can read or share outside the app.</p>
+        </div></div>
+      </div>
+      <div class="note warn">
+        <div class="ic">!</div>
+        <div><p><strong>Heads up in dev:</strong> editing a file mid-run can interrupt an in-flight council (the orchestrator runs in-process). If that happens, restart <code>npm run dev</code> and start a fresh session.</p></div>
+      </div>
+    </section>
 
     <!-- OVERVIEW -->
     <section id="overview">
