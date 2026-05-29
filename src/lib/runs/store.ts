@@ -54,6 +54,7 @@ export async function createRun(input: CreateRunInput): Promise<Run> {
     constraints: input.constraints?.trim() || undefined,
     preferredStack: input.preferredStack?.trim() || undefined,
     competitorUrls: input.competitorUrls?.trim() || undefined,
+    includeResearch: input.includeResearch !== false,
     goal: input.goal,
     status: "queued",
     createdAt: now,

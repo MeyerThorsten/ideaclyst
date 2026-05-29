@@ -25,6 +25,7 @@ export default function IdeaForm() {
   const [constraints, setConstraints] = useState("");
   const [preferredStack, setPreferredStack] = useState("");
   const [competitorUrls, setCompetitorUrls] = useState("");
+  const [includeResearch, setIncludeResearch] = useState(true);
   const [goal, setGoal] = useState<RunGoal>("validate");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +45,7 @@ export default function IdeaForm() {
           constraints,
           preferredStack,
           competitorUrls,
+          includeResearch,
           goal,
         }),
       });
@@ -143,6 +145,22 @@ export default function IdeaForm() {
           The research step will recon these pages for a competitor teardown.
         </p>
       </div>
+
+      <label className="flex items-start gap-2.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5">
+        <input
+          type="checkbox"
+          checked={includeResearch}
+          onChange={(e) => setIncludeResearch(e.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400"
+        />
+        <span className="text-sm text-zinc-700">
+          <span className="font-medium text-zinc-800">Web research (Step 0)</span> — scout the
+          market &amp; competitors before the council deliberates.
+          <span className="block text-xs text-zinc-500">
+            On by default. Turn off to skip straight to the council.
+          </span>
+        </span>
+      </label>
 
       <div>
         <label htmlFor="goal" className={labelCls}>

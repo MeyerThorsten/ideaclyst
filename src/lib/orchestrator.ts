@@ -50,15 +50,18 @@ export async function startRun(runId: string): Promise<void> {
       runAgent(agent, prompt, { run: run as Run, stepKey });
 
     // Step 0 — Web research (best-effort; never throws). Grounds every later step.
-    const research = await runMarketResearch(run, { competitorUrls: run.competitorUrls });
-    await writeRunFile(runId, "RESEARCH_FINDINGS.md", research.findings);
+    // Skipped (with a note) when the founder turns it off in the form.
+    const researchFindings =
+      run.includeResearch === false
+        ? "_Web research was turned off for this run._"
+        : (await runMarketResearch(run, { competitorUrls: run.competitorUrls })).findings;
+    await writeRunFile(runId, "RESEARCH_FINDINGS.md", researchFindings);
     run = await persistStep(
-      { researchFindings: research.findings },
+      { researchFindings },
       "Web Research",
-      research.findings,
+      researchFindings,
       "Product strategy",
     );
-    const researchFindings = research.findings;
 
     // Step 1 — Claude: product strategy
     const productStrategy = await call(

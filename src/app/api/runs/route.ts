@@ -54,6 +54,7 @@ export async function POST(request: Request) {
     constraints: typeof b.constraints === "string" ? b.constraints : undefined,
     preferredStack: typeof b.preferredStack === "string" ? b.preferredStack : undefined,
     competitorUrls: typeof b.competitorUrls === "string" ? b.competitorUrls : undefined,
+    includeResearch: b.includeResearch !== false,
   };
 
   const run = await createRun(input);

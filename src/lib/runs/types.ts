@@ -41,6 +41,8 @@ export interface Run {
   preferredStack?: string;
   /** Optional competitor URLs to deep-recon during research (comma/newline list). */
   competitorUrls?: string;
+  /** Whether to run the web-research Step 0. Defaults to true. */
+  includeResearch?: boolean;
   goal: RunGoal;
   status: RunStatus;
   createdAt: string;
@@ -59,6 +61,7 @@ export interface CreateRunInput {
   constraints?: string;
   preferredStack?: string;
   competitorUrls?: string;
+  includeResearch?: boolean;
   goal: RunGoal;
 }
 
