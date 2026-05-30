@@ -31,6 +31,8 @@ import {
   renderValidationExperimentsMarkdown,
 } from "./research/artifacts";
 
+export const RESEARCH_REFRESH_STEP = "Refreshing research";
+
 function transcriptBlock(label: string, body: string): string {
   return `\n\n---\n\n## ${label}\n\n${body.trim()}\n`;
 }
@@ -73,18 +75,41 @@ async function researchOutputsForRun(run: Run): Promise<Partial<RunOutputs>> {
   };
 }
 
-export async function refreshRunResearch(runId: string): Promise<Run | null> {
+async function finishRunResearchRefresh(runId: string): Promise<Run | null> {
   const run = await getRun(runId);
   if (!run) return null;
-  await updateRun(runId, { currentStep: "Refreshing research" });
   try {
     const outputs = await researchOutputsForRun({ ...run, includeResearch: true });
     await writeRunFile(runId, "RESEARCH_FINDINGS.md", outputs.researchFindings || "");
-    return await updateRun(runId, { outputs, currentStep: undefined });
+    return await updateRun(runId, { outputs, currentStep: undefined, error: undefined });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error refreshing research";
     return await updateRun(runId, { error: message, currentStep: undefined });
   }
+}
+
+export async function refreshRunResearch(runId: string): Promise<Run | null> {
+  const run = await getRun(runId);
+  if (!run) return null;
+  await updateRun(runId, { currentStep: RESEARCH_REFRESH_STEP });
+  return finishRunResearchRefresh(runId);
+}
+
+export async function queueRunResearchRefresh(runId: string): Promise<Run | null> {
+  const run = await getRun(runId);
+  if (!run) return null;
+  if (run.status === "queued" || run.status === "running" || run.currentStep === RESEARCH_REFRESH_STEP) {
+    return run;
+  }
+
+  const queued = await updateRun(runId, {
+    currentStep: RESEARCH_REFRESH_STEP,
+    error: undefined,
+  });
+  void finishRunResearchRefresh(runId).catch((err) => {
+    console.error(`[ideaclyst] research refresh failed for ${runId}:`, err);
+  });
+  return queued;
 }
 
 export async function startRun(runId: string): Promise<void> {

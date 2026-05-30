@@ -323,7 +323,7 @@
       <p>IdeaClyst hat vier Schichten, und die Design-Disziplin ist: Nur <em>eine</em> davon weiß, ob du im Mock- oder echten CLI-Modus bist.</p>
       <div class="grid two">
         <div class="feature"><div class="k">Schicht 1 · UI</div><h4>App-Router-Seiten</h4><p>Startseite, Ideen-Formular (<code>/new</code>), Sessions-Liste (<code>/runs</code>) und eine Live-Run-Detailseite, die pollt. Reines Client-Rendering + fetch.</p></div>
-        <div class="feature"><div class="k">Schicht 2 · API</div><h4>Route-Handler</h4><p><code>/api/runs</code> legt einen Run an und feuert den Council ab; <code>/api/runs/[id]</code> liefert einen Run fürs Polling; <code>/api/runs/[id]/research</code> aktualisiert nur die Research-Artefakte.</p></div>
+        <div class="feature"><div class="k">Schicht 2 · API</div><h4>Route-Handler</h4><p><code>/api/runs</code> legt einen Run an und feuert den Council ab; <code>/api/runs/[id]</code> liefert einen Run fürs Polling; <code>/api/runs/[id]/research</code> reiht eine reine Research-Aktualisierung ein und antwortet sofort.</p></div>
         <div class="feature"><div class="k">Schicht 3 · Orchestrator</div><h4>Die 5-Schritte-Pipeline</h4><p><code>orchestrator.ts</code> steuert den Council und persistiert nach jedem Schritt, inklusive der strukturierten Research-Toolkit-Dateien aus Schritt 0.</p></div>
         <div class="feature"><div class="k">Schicht 4 · Agents + Store</div><h4>Die Mode-Naht &amp; Platte</h4><p><code>agents/</code> ist der einzige mode-bewusste Code; <code>runs/store.ts</code> liest &amp; schreibt die Single Source of Truth auf Platte.</p></div>
       </div>
@@ -354,7 +354,7 @@
           <div class="body" style="border-top:3px solid var(--ember)">
             <span class="who" style="color:var(--ember)"><i class="swatch" style="width:10px;height:10px;background:var(--ember)"></i> Surfagent · Web-Recherche</span>
             <h4>Marktrecherche</h4>
-            <p>Bevor der Council berät, durchsucht ein Headless-Chrome das Web nach Markt und Wettbewerbern der Idee und schreibt ein Recherche-Memo plus strukturiertes Toolkit, das jeden folgenden Schritt erdet. Best-effort: Fehlt Chrome oder ist eine Suche blockiert, fällt es auf Offline-Synthese zurück — der Run scheitert nie. Pro Run im Ideen-Formular abschaltbar und später ohne kompletten Council neu ausführbar.</p>
+            <p>Bevor der Council berät, durchsucht ein Headless-Chrome das Web nach Markt und Wettbewerbern der Idee und schreibt ein Recherche-Memo plus strukturiertes Toolkit, das jeden folgenden Schritt erdet. Best-effort: Fehlt Chrome oder ist eine Suche blockiert, fällt es auf Offline-Synthese zurück — der Run scheitert nie. Pro Run im Ideen-Formular abschaltbar und später als Hintergrund-Refresh ohne kompletten Council neu ausführbar.</p>
             <div class="sees"><b>Sieht:</b> <span class="tag brief">Idee-Brief</span> <span class="tag">+ Live-Web</span></div>
           </div>
         </div>

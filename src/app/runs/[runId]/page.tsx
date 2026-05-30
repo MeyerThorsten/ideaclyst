@@ -8,6 +8,7 @@ import StatusPill from "@/components/status-pill";
 import ResultTabs from "@/components/result-tabs";
 
 const POLL_MS = 1500;
+const RESEARCH_REFRESH_STEP = "Refreshing research";
 
 const STEP_FLOW = [
   "Market research",
@@ -27,6 +28,7 @@ export default function RunDetailPage({
   const [run, setRun] = useState<Run | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshingResearch, setRefreshingResearch] = useState(false);
+  const [pollNonce, setPollNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,7 +45,11 @@ export default function RunDetailPage({
         if (cancelled) return;
         setRun(data.run);
         setError(null);
-        if (data.run.status === "queued" || data.run.status === "running") {
+        if (
+          data.run.status === "queued" ||
+          data.run.status === "running" ||
+          data.run.currentStep === RESEARCH_REFRESH_STEP
+        ) {
           timer = setTimeout(poll, POLL_MS);
         }
       } catch (err) {
@@ -58,7 +64,7 @@ export default function RunDetailPage({
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [runId]);
+  }, [runId, pollNonce]);
 
   async function refreshResearch() {
     if (!run || refreshingResearch) return;
@@ -69,6 +75,9 @@ export default function RunDetailPage({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to refresh research");
       setRun(data.run);
+      if (data.run.currentStep === RESEARCH_REFRESH_STEP) {
+        setPollNonce((n) => n + 1);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to refresh research");
     } finally {
@@ -94,6 +103,7 @@ export default function RunDetailPage({
   }
 
   const inProgress = run.status === "queued" || run.status === "running";
+  const researchRefreshActive = run.currentStep === RESEARCH_REFRESH_STEP;
   const currentIndex = run.currentStep ? STEP_FLOW.indexOf(run.currentStep) : -1;
 
   return (
@@ -110,10 +120,10 @@ export default function RunDetailPage({
             <button
               type="button"
               onClick={refreshResearch}
-              disabled={refreshingResearch || inProgress}
+              disabled={refreshingResearch || researchRefreshActive || inProgress}
               className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {refreshingResearch ? "Refreshing research..." : "Rerun research"}
+              {refreshingResearch || researchRefreshActive ? "Refreshing research..." : "Rerun research"}
             </button>
             <StatusPill status={run.status} />
           </div>
@@ -156,6 +166,15 @@ export default function RunDetailPage({
               );
             })}
           </ol>
+        </div>
+      ) : null}
+
+      {!inProgress && researchRefreshActive ? (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-5">
+          <div className="flex items-center gap-2 text-sm font-medium text-indigo-800">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
+            Refreshing research artifacts…
+          </div>
         </div>
       ) : null}
 

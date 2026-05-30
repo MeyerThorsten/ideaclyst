@@ -9,15 +9,35 @@ interface TabDef {
   key: string;
   label: string;
   value: string;
+  unavailable?: boolean;
 }
 
 export default function ResultTabs({ run }: { run: Run }) {
   const o = run.outputs;
+  const researchOff = run.includeResearch === false;
+  const isWorking =
+    run.status === "queued" ||
+    run.status === "running" ||
+    run.currentStep === "Refreshing research";
   const tabs: TabDef[] = [
     { key: "summary", label: "Summary", value: o.summary },
     { key: "researchFindings", label: "Research", value: o.researchFindings },
-    { key: "researchToolkit", label: "Research Toolkit", value: o.researchToolkit },
-    { key: "founderBrief", label: "Founder Brief", value: o.founderBrief },
+    {
+      key: "researchToolkit",
+      label: "Research Toolkit",
+      value: researchOff
+        ? "_Research toolkit is not available because web research was turned off for this run._"
+        : o.researchToolkit,
+      unavailable: researchOff,
+    },
+    {
+      key: "founderBrief",
+      label: "Founder Brief",
+      value: researchOff
+        ? "_Founder brief is not available because web research was turned off for this run._"
+        : o.founderBrief,
+      unavailable: researchOff,
+    },
     { key: "productStrategy", label: "Product Strategy", value: o.productStrategy },
     { key: "technicalArchitecture", label: "Technical Architecture", value: o.technicalArchitecture },
     { key: "mvpBacklog", label: "MVP Backlog", value: o.mvpBacklog },
@@ -35,6 +55,7 @@ export default function ResultTabs({ run }: { run: Run }) {
       <div className="flex flex-wrap gap-1 border-b border-zinc-200 p-2">
         {tabs.map((t) => {
           const ready = Boolean(t.value && t.value.trim());
+          const pending = !ready && isWorking && !t.unavailable;
           return (
             <button
               key={t.key}
@@ -46,7 +67,7 @@ export default function ResultTabs({ run }: { run: Run }) {
               }`}
             >
               {t.label}
-              {!ready ? (
+              {pending ? (
                 <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-zinc-300 align-middle" />
               ) : null}
             </button>

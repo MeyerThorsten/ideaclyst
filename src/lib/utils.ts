@@ -1,8 +1,8 @@
 /**
  * Small shared helpers: slug generation, run-id formatting, and a dependency-free
  * Markdown → HTML renderer. The renderer is intentionally minimal (headings,
- * lists, code blocks, inline code/bold/italic/links, paragraphs) — enough to make
- * the council's Markdown read well without pulling in a heavy parser for v0.
+ * tables, lists, code blocks, inline code/bold/italic/links, paragraphs) — enough
+ * to make the council's Markdown read well without pulling in a heavy parser for v0.
  */
 
 export function slugify(input: string): string {
@@ -71,6 +71,41 @@ function renderInline(text: string): string {
   return out;
 }
 
+function parseTableRow(line: string): string[] | null {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) return null;
+  const cells = trimmed.slice(1, -1).split("|").map((cell) => cell.trim());
+  return cells.length >= 2 ? cells : null;
+}
+
+function isTableSeparator(cells: string[]): boolean {
+  return cells.every((cell) => /^:?-{3,}:?$/.test(cell.replace(/\s/g, "")));
+}
+
+function renderTable(headers: string[], rows: string[][]): string {
+  const renderCell = (cell: string) => renderInline(escapeHtml(cell));
+  const thead = headers
+    .map((cell) => `<th class="px-3 py-2 text-left font-semibold text-zinc-800">${renderCell(cell)}</th>`)
+    .join("");
+  const tbody = rows
+    .map((row) => {
+      const cells = headers
+        .map((_, index) => `<td class="px-3 py-2 align-top text-zinc-700">${renderCell(row[index] ?? "")}</td>`)
+        .join("");
+      return `<tr>${cells}</tr>`;
+    })
+    .join("");
+
+  return [
+    '<div class="my-4 overflow-x-auto rounded-lg border border-zinc-200">',
+    '<table class="min-w-full divide-y divide-zinc-200 text-sm">',
+    `<thead class="bg-zinc-50"><tr>${thead}</tr></thead>`,
+    `<tbody class="divide-y divide-zinc-100 bg-white">${tbody}</tbody>`,
+    "</table>",
+    "</div>",
+  ].join("");
+}
+
 /**
  * Render a Markdown string to an HTML string. Not a full CommonMark parser —
  * handles the constructs the council actually emits.
@@ -101,7 +136,8 @@ export function renderMarkdown(md: string): string {
     }
   };
 
-  for (const raw of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
     const line = raw;
 
     // fenced code blocks
@@ -142,6 +178,29 @@ export function renderMarkdown(md: string): string {
         6: "text-sm font-semibold text-zinc-600 mt-3 mb-1",
       };
       html.push(`<h${level} class="${sizes[level]}">${renderInline(escapeHtml(h[2]))}</h${level}>`);
+      continue;
+    }
+
+    // pipe tables: header row + separator row, followed by pipe rows
+    const tableHeader = parseTableRow(line);
+    const tableSeparator = tableHeader ? parseTableRow(lines[i + 1] ?? "") : null;
+    if (
+      tableHeader &&
+      tableSeparator &&
+      tableHeader.length === tableSeparator.length &&
+      isTableSeparator(tableSeparator)
+    ) {
+      flushList();
+      const rows: string[][] = [];
+      let j = i + 2;
+      while (j < lines.length) {
+        const row = parseTableRow(lines[j]);
+        if (!row) break;
+        rows.push(row);
+        j++;
+      }
+      html.push(renderTable(tableHeader, rows));
+      i = j - 1;
       continue;
     }
 

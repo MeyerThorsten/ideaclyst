@@ -132,8 +132,9 @@ data — and to help you *find* ideas, not just evaluate them.
 - **Validation evidence** — the final synthesis cites the gathered sources (with links) in
   the Validation Tests section; the toolkit also generates standalone validation
   experiments from the same evidence.
-- **Rerun research only** — on a completed run page, use **Rerun research** to refresh the
-  surfagent-derived artifacts without rerunning the full Claude+Codex council.
+- **Rerun research only** — on a completed run page, use **Rerun research** to queue a
+  background refresh of the surfagent-derived artifacts without rerunning the full
+  Claude+Codex council. The page polls until the refreshed toolkit lands on disk.
 - **Idea Discovery** (`/discover`) — don't have an idea yet? Give a market and IdeaClyst
   finds candidate ideas for you. See its own section below.
 
@@ -327,8 +328,10 @@ section can't be found — so a tab is never blank.
   goal ∈ `validate · plan · build · pitch · refine`.
 - **`GET /api/runs/[runId]`** — return a single run as `{ run: Run }` (what the detail
   page polls every 1.5s).
-- **`POST /api/runs/[runId]/research`** — rerun only the research/toolkit pass for an
-  existing run and return the updated `{ run }`. It does not rerun the full council.
+- **`POST /api/runs/[runId]/research`** — queue only the research/toolkit pass for an
+  existing run and return the queued `{ run }` (202). The detail page polls
+  `/api/runs/[runId]` until the refreshed artifacts are written. It does not rerun the
+  full council.
 
 ### Drive a run from the terminal
 

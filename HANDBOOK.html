@@ -339,7 +339,7 @@
       <p>IdeaClyst has four layers, and the design discipline is that only <em>one</em> of them knows whether you're in mock or real-CLI mode.</p>
       <div class="grid two">
         <div class="feature"><div class="k">Layer 1 · UI</div><h4>App Router pages</h4><p>Home, idea form (<code>/new</code>), sessions list (<code>/runs</code>), and a live run detail page that polls. Pure client rendering + fetch.</p></div>
-        <div class="feature"><div class="k">Layer 2 · API</div><h4>Route handlers</h4><p><code>/api/runs</code> creates a run and fires the council; <code>/api/runs/[id]</code> returns one run for polling; <code>/api/runs/[id]/research</code> refreshes only research artifacts.</p></div>
+        <div class="feature"><div class="k">Layer 2 · API</div><h4>Route handlers</h4><p><code>/api/runs</code> creates a run and fires the council; <code>/api/runs/[id]</code> returns one run for polling; <code>/api/runs/[id]/research</code> queues a research-only refresh and returns immediately.</p></div>
         <div class="feature"><div class="k">Layer 3 · Orchestrator</div><h4>The 5-step pipeline</h4><p><code>orchestrator.ts</code> sequences the council and persists after every step, including the structured research toolkit files created during Step 0.</p></div>
         <div class="feature"><div class="k">Layer 4 · Agents + Store</div><h4>The mode seam &amp; disk</h4><p><code>agents/</code> is the only mode-aware code; <code>runs/store.ts</code> reads &amp; writes the on-disk source of truth.</p></div>
       </div>
@@ -370,7 +370,7 @@
           <div class="body" style="border-top:3px solid var(--ember)">
             <span class="who" style="color:var(--ember)"><i class="swatch" style="width:10px;height:10px;background:var(--ember)"></i> Surfagent · Web research</span>
             <h4>Market research</h4>
-            <p>Before the council deliberates, headless Chrome scouts the web for the idea's market and competitors and writes a research memo plus a structured toolkit that grounds every later step. Best-effort: if Chrome is missing or a search is blocked it falls back to offline synthesis — the run never fails. Can be toggled off per run in the idea form or refreshed later without rerunning the council.</p>
+            <p>Before the council deliberates, headless Chrome scouts the web for the idea's market and competitors and writes a research memo plus a structured toolkit that grounds every later step. Best-effort: if Chrome is missing or a search is blocked it falls back to offline synthesis — the run never fails. Can be toggled off per run in the idea form or queued later as a background refresh without rerunning the council.</p>
             <div class="sees"><b>Sees:</b> <span class="tag brief">idea brief</span> <span class="tag">+ live web</span></div>
           </div>
         </div>
