@@ -312,6 +312,7 @@
         <div class="feature"><div class="k">Robust</div><h4>Sauberes Scheitern</h4><p>Eine fehlende oder fehlschlagende CLI markiert den Run als „failed“ mit klarer Meldung — abgeschlossene Schritte bleiben erhalten.</p></div>
         <div class="feature"><div class="k">Portabel</div><h4>Markdown-Artefakte</h4><p>Jeder Run schreibt zusätzlich lesbare <code>.md</code>-Dateien, die du außerhalb der App lesen oder teilen kannst.</p></div>
         <div class="feature"><div class="k">Keine Secrets</div><h4>Keine Credentials</h4><p>IdeaClyst fasst nie API-Schlüssel an — beide CLIs authentifizieren über ihre eigene lokale Session.</p></div>
+        <div class="feature"><div class="k">Recherche</div><h4>Evidence Toolkit</h4><p>Surfagent-Recherche schreibt <code>RESEARCH_DOSSIER.json</code>, einen Toolkit-Tab, einen Founder-Brief und eigenständige Markt-Artefakte.</p></div>
       </div>
     </section>
 
@@ -322,8 +323,8 @@
       <p>IdeaClyst hat vier Schichten, und die Design-Disziplin ist: Nur <em>eine</em> davon weiß, ob du im Mock- oder echten CLI-Modus bist.</p>
       <div class="grid two">
         <div class="feature"><div class="k">Schicht 1 · UI</div><h4>App-Router-Seiten</h4><p>Startseite, Ideen-Formular (<code>/new</code>), Sessions-Liste (<code>/runs</code>) und eine Live-Run-Detailseite, die pollt. Reines Client-Rendering + fetch.</p></div>
-        <div class="feature"><div class="k">Schicht 2 · API</div><h4>Route-Handler</h4><p><code>/api/runs</code> legt einen Run an und feuert den Council ab; <code>/api/runs/[id]</code> liefert einen Run fürs Polling.</p></div>
-        <div class="feature"><div class="k">Schicht 3 · Orchestrator</div><h4>Die 5-Schritte-Pipeline</h4><p><code>orchestrator.ts</code> steuert den Council und persistiert nach jedem Schritt. Er ruft <code>runAgent()</code> und erfährt nie, welches Backend lief.</p></div>
+        <div class="feature"><div class="k">Schicht 2 · API</div><h4>Route-Handler</h4><p><code>/api/runs</code> legt einen Run an und feuert den Council ab; <code>/api/runs/[id]</code> liefert einen Run fürs Polling; <code>/api/runs/[id]/research</code> aktualisiert nur die Research-Artefakte.</p></div>
+        <div class="feature"><div class="k">Schicht 3 · Orchestrator</div><h4>Die 5-Schritte-Pipeline</h4><p><code>orchestrator.ts</code> steuert den Council und persistiert nach jedem Schritt, inklusive der strukturierten Research-Toolkit-Dateien aus Schritt 0.</p></div>
         <div class="feature"><div class="k">Schicht 4 · Agents + Store</div><h4>Die Mode-Naht &amp; Platte</h4><p><code>agents/</code> ist der einzige mode-bewusste Code; <code>runs/store.ts</code> liest &amp; schreibt die Single Source of Truth auf Platte.</p></div>
       </div>
       <pre><span class="c">// der einzige Zweig, der den Modus kennt — agents/index.ts</span>
@@ -353,7 +354,7 @@
           <div class="body" style="border-top:3px solid var(--ember)">
             <span class="who" style="color:var(--ember)"><i class="swatch" style="width:10px;height:10px;background:var(--ember)"></i> Surfagent · Web-Recherche</span>
             <h4>Marktrecherche</h4>
-            <p>Bevor der Council berät, durchsucht ein Headless-Chrome das Web nach Markt und Wettbewerbern der Idee und schreibt ein Recherche-Memo, das jeden folgenden Schritt erdet. Best-effort: Fehlt Chrome oder ist eine Suche blockiert, fällt es auf Offline-Synthese zurück — der Run scheitert nie. Pro Run im Ideen-Formular abschaltbar.</p>
+            <p>Bevor der Council berät, durchsucht ein Headless-Chrome das Web nach Markt und Wettbewerbern der Idee und schreibt ein Recherche-Memo plus strukturiertes Toolkit, das jeden folgenden Schritt erdet. Best-effort: Fehlt Chrome oder ist eine Suche blockiert, fällt es auf Offline-Synthese zurück — der Run scheitert nie. Pro Run im Ideen-Formular abschaltbar und später ohne kompletten Council neu ausführbar.</p>
             <div class="sees"><b>Sieht:</b> <span class="tag brief">Idee-Brief</span> <span class="tag">+ Live-Web</span></div>
           </div>
         </div>
@@ -422,16 +423,17 @@
       <p>Der größte Teil von IdeaClyst bewertet eine Idee, die du mitbringst. <strong>Idea Discovery</strong> (die Route <code>/discover</code>) macht das Gegenteil — es <em>findet</em> Ideen für dich, geerdet in dem, womit Menschen im Web tatsächlich kämpfen. Das leere Blatt ist der schwerste Teil; Discovery ersetzt es durch echte Nachfrage-Signale.</p>
       <div class="grid two">
         <div class="feature"><div class="k">1 · Briefing</div><h4>Du rahmst die Suche</h4><p>Ein Markt oder Bereich — „visionOS-Apps“, „KI für Steuerberater“ — <strong>plus dein Ziel</strong> (kommerziell / Portfolio / Lernen / persönlich) und deine <strong>Build-Kapazität</strong> (solo / Team / KI-gestützt), plus Constraints. Das prägt alles Weitere.</p></div>
-        <div class="feature"><div class="k">2 · Scouten</div><h4>Surfagent durchsucht das Web</h4><p>Headless-Chrome durchsucht kuratierte Quellen — Hacker News, Product Hunt, Reddit, GitHub-Trending — nach Problemen, „I wish there was…“ und neuen Launches. Jede Quelle ist best-effort und wird mit Notiz übersprungen, wenn sie gesperrt/blockiert ist.</p></div>
+        <div class="feature"><div class="k">2 · Scouten</div><h4>Surfagent durchsucht das Web</h4><p>Headless-Chrome durchsucht quellenspezifische Spuren — Hacker News, Reddit, Product Hunt, GitHub, kommerzielle Review-/Pricing-Seiten und allgemeines Web — nach Problemen, „I wish there was…“, Launches und Implementierungs-Ökosystemen.</p></div>
         <div class="feature"><div class="k">3 · Marktanalyse</div><h4>Zuerst eine ehrliche Landschaft</h4><p>Claude schreibt eine quellenbasierte Analyse — ein Ein-Zeilen-Urteil, Nachfrage-Signale, Wettbewerb, wer wirklich zahlt, und ein realistischer Ausblick für <em>dein</em> Ziel. Bei schwierigem Markt führt sie mit den schlechten Nachrichten.</p></div>
-        <div class="feature"><div class="k">4 · Ranking</div><h4>Konkrete, vergleichbare Ideen</h4><p>Dann 5–7 Kandidaten, <strong>nach Eignung sortiert</strong>, jeder mit Wedge, Zahler, <strong>Build-Aufwand</strong>, <strong>kommerzieller Stärke</strong>, größtem Risiko, Eignung zu Ziel/Kapazität und Signal + Quelle.</p></div>
-        <div class="feature"><div class="k">5 · Promote</div><h4>Ein Klick zum Council</h4><p>„Promote to council“ macht aus einem Kandidaten einen normalen Run — der dann seine eigene Marktrecherche (Schritt 0) und die vollen 5 Council-Schritte durchläuft.</p></div>
+        <div class="feature"><div class="k">4 · Opportunity Map</div><h4>Den Wedge-Bereich finden</h4><p>Der Scout erzeugt eine Pain-/Wettbewerbs-Matrix, damit scharfe Wedges, validierte aber volle Märkte, explorative Ideen und wahrscheinliche Skips sichtbar werden.</p></div>
+        <div class="feature"><div class="k">5 · Ranking</div><h4>Konkrete, vergleichbare Ideen</h4><p>Dann 5–7 Kandidaten, nach Eignung sortiert, jeder mit Wedge, Zahler, Build-Aufwand, kommerzieller Stärke, Risiko, Fit, Signal + Quelle, Confidence-Score und Kill-Kriterien.</p></div>
+        <div class="feature"><div class="k">6 · Promote</div><h4>Ein Klick zum Council</h4><p>„Promote to council“ macht aus einem Kandidaten einen normalen Run — der dann seine eigene Marktrecherche (Schritt 0) und die vollen 5 Council-Schritte durchläuft.</p></div>
       </div>
       <div class="note">
         <div class="ic">◆</div>
         <div><p><strong>Eine Kernfunktion.</strong> Wie die Recherche ist Discovery modusabhängig (deterministische Offline-Kandidaten im Mock; Live-Scouting + Synthese im CLI-Modus) und best-effort — es liefert <em>immer</em> Kandidaten, auch offline oder wenn eine Quelle blockiert ist.</p></div>
       </div>
-      <p>Discoveries werden auf Platte unter <code>.ideaclyst/discoveries/&lt;id&gt;/</code> gespeichert (eine <code>discovery.json</code> + <code>CANDIDATES.md</code>), und die Discovery-Seite pollt live, genau wie ein Run. Der Code liegt in <code>src/lib/discovery/</code>, Scout/Synthese in <code>src/lib/research/</code>.</p>
+      <p>Discoveries werden auf Platte unter <code>.ideaclyst/discoveries/&lt;id&gt;/</code> gespeichert (<code>discovery.json</code>, <code>MARKET_READ.md</code>, <code>OPPORTUNITY_MAP.md</code> und <code>CANDIDATES.md</code>), und die Discovery-Seite pollt live, genau wie ein Run. Der Code liegt in <code>src/lib/discovery/</code>, Scout/Synthese in <code>src/lib/research/</code>.</p>
     </section>
 
     <!-- LIFECYCLE -->
@@ -521,6 +523,17 @@ codex exec --json --skip-git-repo-check --ephemeral \
       ├─ run.json                  <span class="cmt"># ← Single Source of Truth</span>
       ├─ IDEA.md                   <span class="cmt"># der Brief, menschenlesbar</span>
       ├─ RESEARCH_FINDINGS.md      <span class="cmt"># Schritt 0 (Web-Recherche)</span>
+      ├─ RESEARCH_DOSSIER.json     <span class="cmt"># strukturierte Evidenz</span>
+      ├─ RESEARCH_TOOLKIT.md       <span class="cmt"># alle Research-Werkzeuge</span>
+      ├─ COMPETITOR_MATRIX.md      <span class="cmt"># Wettbewerber-Vergleich</span>
+      ├─ OPPORTUNITY_MAP.md        <span class="cmt"># Opportunity-Zonen</span>
+      ├─ VALIDATION_EXPERIMENTS.md <span class="cmt"># Tests aus Quellen</span>
+      ├─ DISTRIBUTION_PLAN.md      <span class="cmt"># frühe Kanäle</span>
+      ├─ IDEA_GRAVEYARD.md         <span class="cmt"># Kill-Kriterien</span>
+      ├─ MVP_SCOPE_NEGOTIATION.md  <span class="cmt"># Scope-Entscheidungen</span>
+      ├─ LANDING_PAGE_CRITIC.md    <span class="cmt"># Landingpage-Kritik</span>
+      ├─ COMPETITOR_WATCH.md       <span class="cmt"># lokale Watch-Basis</span>
+      ├─ FOUNDER_BRIEF.md          <span class="cmt"># kompakter Founder-Brief</span>
       ├─ PRODUCT_STRATEGY.md       <span class="cmt"># Schritt 1</span>
       ├─ TECHNICAL_ARCHITECTURE.md <span class="cmt"># Schritt 2</span>
       ├─ CRITIQUES.md              <span class="cmt"># Schritte 3 + 4 kombiniert</span>

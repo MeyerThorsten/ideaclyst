@@ -26,6 +26,7 @@ export default function RunDetailPage({
   const { runId } = use(params);
   const [run, setRun] = useState<Run | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refreshingResearch, setRefreshingResearch] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +60,22 @@ export default function RunDetailPage({
     };
   }, [runId]);
 
+  async function refreshResearch() {
+    if (!run || refreshingResearch) return;
+    setRefreshingResearch(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/runs/${runId}/research`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to refresh research");
+      setRun(data.run);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to refresh research");
+    } finally {
+      setRefreshingResearch(false);
+    }
+  }
+
   if (error && !run) {
     return (
       <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
@@ -89,7 +106,17 @@ export default function RunDetailPage({
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
             {run.title}
           </h1>
-          <StatusPill status={run.status} />
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={refreshResearch}
+              disabled={refreshingResearch || inProgress}
+              className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {refreshingResearch ? "Refreshing research..." : "Rerun research"}
+            </button>
+            <StatusPill status={run.status} />
+          </div>
         </div>
         <p className="mt-2 max-w-2xl text-sm text-zinc-500">{run.idea}</p>
         <div className="mt-2 flex items-center gap-2 text-xs text-zinc-400">

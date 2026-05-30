@@ -123,10 +123,17 @@ data — and to help you *find* ideas, not just evaluate them.
 - **Market research (Step 0)** — before the council, it web-searches the idea, recons the
   top results, and writes a `RESEARCH_FINDINGS.md` that feeds every later step. Surfaced as
   a **Research** tab.
+- **Research toolkit** — every research pass now also writes a structured
+  `RESEARCH_DOSSIER.json` plus Markdown tools for competitor comparison, opportunity
+  mapping, validation experiments, distribution channels, kill criteria, MVP scope, landing
+  page critique, competitor watch baselines, and a concise founder brief.
 - **Competitor teardown** — paste competitor URLs in the form; their pages are deep-reconned
-  into a teardown section.
+  into a teardown section and a comparison matrix.
 - **Validation evidence** — the final synthesis cites the gathered sources (with links) in
-  the Validation Tests section.
+  the Validation Tests section; the toolkit also generates standalone validation
+  experiments from the same evidence.
+- **Rerun research only** — on a completed run page, use **Rerun research** to refresh the
+  surfagent-derived artifacts without rerunning the full Claude+Codex council.
 - **Idea Discovery** (`/discover`) — don't have an idea yet? Give a market and IdeaClyst
   finds candidate ideas for you. See its own section below.
 
@@ -152,17 +159,22 @@ candidates, grounded in live demand signals instead of a blank page.
 1. **Brief it** — a market or space (e.g. *"visionOS apps"*, *"AI for accountants"*) **plus
    your goal** (commercial · portfolio · learning · personal) and **build capacity** (solo ·
    team · AI-assisted), and any constraints. These shape the whole result.
-2. **Scout** — headless Chrome (surfagent) sweeps curated sources — **Hacker News, Product
-   Hunt, Reddit, GitHub trending** — for problems, *"I wish there was…"* posts, and recent
-   launches. Each source is best-effort and skipped-with-note if it's walled or blocked.
+2. **Scout** — headless Chrome (surfagent) sweeps source-specific search lanes — **Hacker
+   News, Reddit, Product Hunt, GitHub, commercial review/pricing pages, and general web** —
+   for problems, *"I wish there was…"* posts, recent launches, and implementation ecosystems.
+   Each source is best-effort and skipped-with-note if it's walled or blocked.
 3. **Market read** — Claude writes an **honest, sourced read** of the space first: a one-line
    verdict, demand signals, competition, who actually pays, and a realistic outlook for *your*
    goal — not blind optimism.
-4. **Ranked concepts** — then **5–7 candidate ideas, ranked best-fit-first**, each carrying a
+4. **Opportunity map** — the scout also builds a high-pain/competition map so the page shows
+   which zones are sharp wedges, validated-but-crowded bets, exploratory ideas, or likely
+   skips.
+5. **Ranked concepts** — then **5–7 candidate ideas, ranked best-fit-first**, each carrying a
    wedge, **who pays**, **build effort** (low/moderate/high for your capacity), **commercial
    strength** (strong/medium/weak for your goal), the **biggest risk**, **why it fits**, and the
-   **signal + source** that surfaced it.
-5. **Promote to council** — one click turns a candidate into a normal run, which then runs its
+   **signal + source** that surfaced it. Each card includes a transparent confidence score
+   across demand evidence, build fit, monetization clarity, novelty, and competition.
+6. **Promote to council** — one click turns a candidate into a normal run, which then runs its
    own market-research Step 0 and the full 5-step council.
 
 Each stage is **persisted progressively** (scout → market read → concepts), so the page reveals
@@ -173,12 +185,13 @@ them live like a council run.
 - New flow alongside runs: `src/lib/discovery/` (store + orchestrator), routes under
   `/api/discoveries` (list/create, get, and `…/[id]/promote`), and pages at `/discover` and
   `/discover/[id]`. The candidate scout/synthesis lives in `src/lib/research/`
-  (`discoverIdeas`).
+  (`scoutMarket`, `marketReadFor`, and `candidatesFor`).
 - **Mode-gated and best-effort**, exactly like research: deterministic offline candidates in
   `mock`, live scouting + Claude synthesis in `cli`. It always returns candidates — even
   offline or when a source is blocked.
 - Each discovery persists to disk under `.ideaclyst/discoveries/<id>/` (`discovery.json` +
-  `CANDIDATES.md`); the discovery page polls just like a run.
+  `MARKET_READ.md`, `OPPORTUNITY_MAP.md`, and `CANDIDATES.md`); the discovery page polls just
+  like a run.
 
 ## Request lifecycle
 
@@ -277,6 +290,18 @@ and `run.json` is the single source of truth.
    └─ <runId>/                       # timestamp-prefixed slug
       ├─ run.json                    # ← single source of truth
       ├─ IDEA.md                     # the brief, human-readable
+      ├─ RESEARCH_FINDINGS.md        # step 0 memo
+      ├─ RESEARCH_DOSSIER.json       # structured source evidence
+      ├─ RESEARCH_TOOLKIT.md         # all research tools in one Markdown packet
+      ├─ COMPETITOR_MATRIX.md        # competitor comparison matrix
+      ├─ OPPORTUNITY_MAP.md          # high-pain / competition map
+      ├─ VALIDATION_EXPERIMENTS.md   # source-grounded experiments
+      ├─ DISTRIBUTION_PLAN.md        # where to reach early users
+      ├─ IDEA_GRAVEYARD.md           # kill criteria
+      ├─ MVP_SCOPE_NEGOTIATION.md    # must-have / defer / scope creep
+      ├─ LANDING_PAGE_CRITIC.md      # competitor landing-page critique
+      ├─ COMPETITOR_WATCH.md         # local watch baseline
+      ├─ FOUNDER_BRIEF.md            # concise founder-ready brief
       ├─ PRODUCT_STRATEGY.md         # step 1
       ├─ TECHNICAL_ARCHITECTURE.md   # step 2
       ├─ CRITIQUES.md                # steps 3 + 4 combined
@@ -302,6 +327,8 @@ section can't be found — so a tab is never blank.
   goal ∈ `validate · plan · build · pitch · refine`.
 - **`GET /api/runs/[runId]`** — return a single run as `{ run: Run }` (what the detail
   page polls every 1.5s).
+- **`POST /api/runs/[runId]/research`** — rerun only the research/toolkit pass for an
+  existing run and return the updated `{ run }`. It does not rerun the full council.
 
 ### Drive a run from the terminal
 
@@ -339,6 +366,7 @@ src/
     runs/[runId]/page.tsx     # live run detail (polls)
     api/runs/route.ts         # GET list / POST create (+ fire council)
     api/runs/[runId]/route.ts # GET one
+    api/runs/[runId]/research/route.ts # POST rerun research only
   components/                 # app-shell, idea-form, result-tabs, run-card, …
   lib/
     agents/                   # runAgent dispatch + mock / claude / codex / prompts

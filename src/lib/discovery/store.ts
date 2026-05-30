@@ -71,6 +71,7 @@ export async function createDiscovery(input: CreateDiscoveryInput): Promise<Disc
     createdAt: now,
     updatedAt: now,
     marketRead: "",
+    opportunityMap: "",
     candidates: [],
     scoutNotes: "",
   };

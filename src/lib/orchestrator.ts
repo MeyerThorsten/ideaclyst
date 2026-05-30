@@ -18,9 +18,73 @@ import {
 } from "./agents/prompts";
 import { splitFinalPlan } from "./runs/markdown";
 import { runMarketResearch } from "./research";
+import {
+  renderCompetitorMatrixMarkdown,
+  renderCompetitorWatchMarkdown,
+  renderDossierJson,
+  renderDistributionPlanMarkdown,
+  renderIdeaGraveyardMarkdown,
+  renderLandingPageCriticMarkdown,
+  renderOpportunityMapMarkdown,
+  renderResearchToolkitMarkdown,
+  renderScopeNegotiationMarkdown,
+  renderValidationExperimentsMarkdown,
+} from "./research/artifacts";
 
 function transcriptBlock(label: string, body: string): string {
   return `\n\n---\n\n## ${label}\n\n${body.trim()}\n`;
+}
+
+async function researchOutputsForRun(run: Run): Promise<Partial<RunOutputs>> {
+  if (run.includeResearch === false) {
+    return {
+      researchFindings: "_Web research was turned off for this run._",
+      researchToolkit: "",
+      founderBrief: "",
+    };
+  }
+
+  const research = await runMarketResearch(run, { competitorUrls: run.competitorUrls });
+  const toolkitMarkdown = research.toolkit ? renderResearchToolkitMarkdown(research.toolkit) : "";
+  const founderBrief = research.toolkit?.founderBrief ?? "";
+
+  if (research.toolkit) {
+    await writeRunFile(run.id, "RESEARCH_DOSSIER.json", renderDossierJson(research.toolkit));
+    await writeRunFile(run.id, "RESEARCH_TOOLKIT.md", toolkitMarkdown);
+    await writeRunFile(run.id, "COMPETITOR_MATRIX.md", renderCompetitorMatrixMarkdown(research.toolkit.competitorMatrix));
+    await writeRunFile(run.id, "OPPORTUNITY_MAP.md", renderOpportunityMapMarkdown(research.toolkit.opportunityMap));
+    await writeRunFile(
+      run.id,
+      "VALIDATION_EXPERIMENTS.md",
+      renderValidationExperimentsMarkdown(research.toolkit.validationExperiments),
+    );
+    await writeRunFile(run.id, "DISTRIBUTION_PLAN.md", renderDistributionPlanMarkdown(research.toolkit.distributionChannels));
+    await writeRunFile(run.id, "IDEA_GRAVEYARD.md", renderIdeaGraveyardMarkdown(research.toolkit.killCriteria));
+    await writeRunFile(run.id, "MVP_SCOPE_NEGOTIATION.md", renderScopeNegotiationMarkdown(research.toolkit.scopeNegotiation));
+    await writeRunFile(run.id, "LANDING_PAGE_CRITIC.md", renderLandingPageCriticMarkdown(research.toolkit.competitorMatrix));
+    await writeRunFile(run.id, "COMPETITOR_WATCH.md", renderCompetitorWatchMarkdown(research.toolkit.watchlist));
+    await writeRunFile(run.id, "FOUNDER_BRIEF.md", founderBrief);
+  }
+
+  return {
+    researchFindings: research.findings,
+    researchToolkit: toolkitMarkdown,
+    founderBrief,
+  };
+}
+
+export async function refreshRunResearch(runId: string): Promise<Run | null> {
+  const run = await getRun(runId);
+  if (!run) return null;
+  await updateRun(runId, { currentStep: "Refreshing research" });
+  try {
+    const outputs = await researchOutputsForRun({ ...run, includeResearch: true });
+    await writeRunFile(runId, "RESEARCH_FINDINGS.md", outputs.researchFindings || "");
+    return await updateRun(runId, { outputs, currentStep: undefined });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error refreshing research";
+    return await updateRun(runId, { error: message, currentStep: undefined });
+  }
 }
 
 export async function startRun(runId: string): Promise<void> {
@@ -51,13 +115,11 @@ export async function startRun(runId: string): Promise<void> {
 
     // Step 0 — Web research (best-effort; never throws). Grounds every later step.
     // Skipped (with a note) when the founder turns it off in the form.
-    const researchFindings =
-      run.includeResearch === false
-        ? "_Web research was turned off for this run._"
-        : (await runMarketResearch(run, { competitorUrls: run.competitorUrls })).findings;
+    const researchOutputs = await researchOutputsForRun(run);
+    const researchFindings = researchOutputs.researchFindings || "";
     await writeRunFile(runId, "RESEARCH_FINDINGS.md", researchFindings);
     run = await persistStep(
-      { researchFindings },
+      researchOutputs,
       "Web Research",
       researchFindings,
       "Product strategy",

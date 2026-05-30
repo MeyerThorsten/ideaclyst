@@ -17,6 +17,12 @@ import { webSearch } from "./search";
 import { isSafePublicUrl } from "./url-safety";
 import { marketResearchSynthesisPrompt, marketReadPrompt, candidatesPrompt } from "./synthesize";
 import {
+  buildDiscoveryOpportunityMap,
+  buildResearchToolkit,
+  mockSourcesForRun,
+  scoreCandidates,
+} from "./artifacts";
+import {
   mockMarketResearch,
   mockCompetitorTeardown,
   mockMarketRead,
@@ -30,6 +36,7 @@ import {
   DiscoveryBrief,
   EffortLevel,
   CommercialStrength,
+  ResearchSourceType,
 } from "./types";
 
 export type ResearchMode = "mock" | "live";
@@ -76,12 +83,21 @@ async function pageSource(
   port: number,
   host: string,
   deep: boolean,
+  sourceType: ResearchSourceType = "search",
+  sourceName = "Search result",
 ): Promise<ResearchSource | null> {
   const perTimeout = num("IDEACLYST_RESEARCH_TIMEOUT_MS", 20_000);
   try {
     if (deep) {
       const r = await withTimeout(readUrl(url, { port, host }), perTimeout, "readUrl");
-      return { url, title: r.title || url, summary: r.plainText.slice(0, 1200), kind: "page" };
+      return {
+        url,
+        title: r.title || url,
+        summary: r.plainText.slice(0, 1200),
+        kind: "page",
+        sourceType,
+        sourceName,
+      };
     }
     const r = await withTimeout(reconUrl(url, { port, host }), perTimeout, "reconUrl");
     return {
@@ -89,10 +105,22 @@ async function pageSource(
       title: r.title || url,
       summary: r.contentSummary.slice(0, 1200),
       kind: "page",
+      sourceType,
+      sourceName,
     };
   } catch {
     return null;
   }
+}
+
+function withToolkit(run: Run, result: ResearchResult, competitorUrls: string[]): ResearchResult {
+  const sources = result.sources.length ? result.sources : mockSourcesForRun(run, competitorUrls);
+  const toolkit = buildResearchToolkit(run, sources, {
+    competitorUrls,
+    note: result.note,
+    findings: result.findings,
+  });
+  return { ...result, sources, toolkit };
 }
 
 async function liveMarketResearch(
@@ -112,6 +140,8 @@ async function liveMarketResearch(
       title: r.title,
       summary: r.snippet,
       kind: "serp" as const,
+      sourceType: "search" as const,
+      sourceName: "General web search",
     }));
 
     // Deep-recon the top few organic results — stop early if the budget is spent.
@@ -121,7 +151,7 @@ async function liveMarketResearch(
         notes.push("budget reached during recon");
         break;
       }
-      const s = await pageSource(url, port, host, false);
+      const s = await pageSource(url, port, host, false, "search", "General web recon");
       if (s) sources.push(s);
     }
 
@@ -131,7 +161,7 @@ async function liveMarketResearch(
       const compSources: ResearchSource[] = [];
       for (const url of competitorUrls) {
         if (Date.now() > deadline) break;
-        const s = await pageSource(url, port, host, true);
+        const s = await pageSource(url, port, host, true, "competitor", "Founder supplied competitor");
         if (s) compSources.push(s);
       }
       if (compSources.length) {
@@ -182,7 +212,8 @@ export async function runMarketResearch(
     const res = mockMarketResearch(run);
     const teardown = mockCompetitorTeardown(competitorUrls);
     if (teardown) res.findings += `\n\n${teardown}`;
-    return res;
+    res.sources = mockSourcesForRun(run, competitorUrls);
+    return withToolkit(run, res, competitorUrls);
   }
 
   try {
@@ -190,16 +221,24 @@ export async function runMarketResearch(
     // race that abandons in-flight work) so Chrome is always released and no
     // promise keeps running unobserved after we return.
     const deadline = Date.now() + num("IDEACLYST_RESEARCH_BUDGET_MS", 60_000);
-    return await liveMarketResearch(run, competitorUrls, deadline);
+    return withToolkit(run, await liveMarketResearch(run, competitorUrls, deadline), competitorUrls);
   } catch (err) {
     const reason = err instanceof Error ? err.message : "unknown error";
-    return mockMarketResearch(run, `Live research unavailable (${reason}) — used offline synthesis.`);
+    const res = mockMarketResearch(run, `Live research unavailable (${reason}) — used offline synthesis.`);
+    res.sources = mockSourcesForRun(run, competitorUrls);
+    return withToolkit(run, res, competitorUrls);
   }
 }
 
 // ---- Idea Discovery scouting ----
 
-async function liveScout(queries: string[], deadline: number): Promise<DiscoveryScoutResult> {
+interface DiscoveryQuery {
+  query: string;
+  sourceName: string;
+  sourceType: ResearchSourceType;
+}
+
+async function liveScout(queries: DiscoveryQuery[], deadline: number): Promise<DiscoveryScoutResult> {
   const maxSources = num("IDEACLYST_RESEARCH_MAX_SOURCES", 3);
   const { port, host } = await ensureChrome();
   const notes: string[] = [];
@@ -213,16 +252,28 @@ async function liveScout(queries: string[], deadline: number): Promise<Discovery
       }
       let results;
       try {
-        results = await withTimeout(webSearch(q), num("IDEACLYST_RESEARCH_TIMEOUT_MS", 20_000), "webSearch");
+        results = await withTimeout(
+          webSearch(q.query),
+          num("IDEACLYST_RESEARCH_TIMEOUT_MS", 20_000),
+          "webSearch",
+        );
       } catch {
-        notes.push(`search failed: ${q}`);
+        notes.push(`search failed: ${q.sourceName}`);
         continue;
       }
       for (const r of results.slice(0, maxSources)) {
         if (Date.now() > deadline) break;
         if (seen.has(r.url)) continue;
         seen.add(r.url);
-        const s = await pageSource(r.url, port, host, false);
+        sources.push({
+          url: r.url,
+          title: r.title,
+          summary: r.snippet,
+          kind: "serp",
+          sourceType: q.sourceType,
+          sourceName: q.sourceName,
+        });
+        const s = await pageSource(r.url, port, host, false, q.sourceType, q.sourceName);
         if (s) sources.push(s);
       }
     }
@@ -232,32 +283,130 @@ async function liveScout(queries: string[], deadline: number): Promise<Discovery
       degraded: notes.length > 0,
       note: notes.length ? notes.join("; ") : undefined,
       sources,
+      timeline: buildResearchToolkit(
+        {
+          id: "discovery",
+          title: "Discovery scouting",
+          idea: queries.map((q) => q.query).join(" "),
+          goal: "validate",
+          status: "running",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          outputs: {
+            researchFindings: "",
+            researchToolkit: "",
+            founderBrief: "",
+            productStrategy: "",
+            technicalArchitecture: "",
+            claudeCritique: "",
+            codexCritique: "",
+            finalPlan: "",
+            summary: "",
+            mvpBacklog: "",
+            risks: "",
+            validationTests: "",
+            nextPrompts: "",
+            transcript: "",
+          },
+        },
+        sources,
+        { note: notes.join("; ") },
+      ).timeline,
     };
   } finally {
     releaseChrome();
   }
 }
 
-function discoveryQueries(brief: DiscoveryBrief): string[] {
+function discoveryQueries(brief: DiscoveryBrief): DiscoveryQuery[] {
   const d = brief.domain;
-  const q = [
-    `${d} problems people complain about`,
-    `${d} "I wish there was" OR frustrating`,
-    `new ${d} apps launch ${brief.goal === "commercial" ? "revenue market" : ""}`.trim(),
+  const q: DiscoveryQuery[] = [
+    {
+      query: `${d} problems people complain about`,
+      sourceName: "General pain search",
+      sourceType: "search",
+    },
+    {
+      query: `site:news.ycombinator.com ${d} problem OR frustrating OR "wish there was"`,
+      sourceName: "Hacker News pain scan",
+      sourceType: "forum",
+    },
+    {
+      query: `site:reddit.com ${d} "how do I" OR "I wish" OR frustrating`,
+      sourceName: "Reddit workaround scan",
+      sourceType: "forum",
+    },
+    {
+      query: `site:producthunt.com ${d} launch app tool`,
+      sourceName: "Product Hunt launch scan",
+      sourceType: "launch",
+    },
+    {
+      query: `site:github.com ${d} tool library template`,
+      sourceName: "GitHub ecosystem scan",
+      sourceType: "code",
+    },
+    {
+      query: `new ${d} apps launch ${brief.goal === "commercial" ? "revenue market" : ""}`.trim(),
+      sourceName: "Commercial launch search",
+      sourceType: "launch",
+    },
   ];
-  if (brief.goal === "commercial") q.push(`${d} market size demand 2026`);
+  if (brief.goal === "commercial") {
+    q.push({
+      query: `${d} pricing reviews alternatives market demand`,
+      sourceName: "Commercial review and pricing scan",
+      sourceType: "review",
+    });
+  }
   return q;
 }
 
 /** Stage 1 — scout the web for the brief (mock → empty; live → real sources). */
 export async function scoutMarket(brief: DiscoveryBrief): Promise<DiscoveryScoutResult> {
   if (researchMode() === "mock") {
-    return { ok: false, degraded: true, note: "Mock mode — offline.", sources: [] };
+    const sources = mockSourcesForRun(
+      {
+        id: "discovery",
+        title: brief.domain,
+        idea: brief.domain,
+        targetCustomer: brief.constraints,
+        goal: "validate",
+        status: "running",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        outputs: {
+          researchFindings: "",
+          researchToolkit: "",
+          founderBrief: "",
+          productStrategy: "",
+          technicalArchitecture: "",
+          claudeCritique: "",
+          codexCritique: "",
+          finalPlan: "",
+          summary: "",
+          mvpBacklog: "",
+          risks: "",
+          validationTests: "",
+          nextPrompts: "",
+          transcript: "",
+        },
+      },
+      [],
+    );
+    return {
+      ok: false,
+      degraded: true,
+      note: "Mock mode — offline.",
+      sources,
+      opportunityMap: buildDiscoveryOpportunityMap(brief, sources),
+    };
   }
   try {
     // Deadline (not an abandoning race) so Chrome is always released cleanly.
     const deadline = Date.now() + num("IDEACLYST_RESEARCH_BUDGET_MS", 60_000);
-    return await liveScout(discoveryQueries(brief), deadline);
+    const scout = await liveScout(discoveryQueries(brief), deadline);
+    return { ...scout, opportunityMap: buildDiscoveryOpportunityMap(brief, scout.sources) };
   } catch (err) {
     const reason = err instanceof Error ? err.message : "unknown error";
     return { ok: false, degraded: true, note: `Scout unavailable (${reason}).`, sources: [] };
@@ -291,7 +440,7 @@ export async function candidatesFor(
   marketRead: string,
 ): Promise<IdeaCandidate[]> {
   if (researchMode() === "mock" || sources.length === 0) {
-    return mockDiscoveryCandidates(brief);
+    return scoreCandidates(brief, mockDiscoveryCandidates(brief), sources);
   }
   try {
     const ctxRun = { id: "discovery", title: brief.domain, idea: brief.domain } as unknown as Run;
@@ -300,9 +449,9 @@ export async function candidatesFor(
       stepKey: "marketResearch",
     });
     const parsed = parseCandidates(raw);
-    return parsed.length ? parsed : mockDiscoveryCandidates(brief);
+    return scoreCandidates(brief, parsed.length ? parsed : mockDiscoveryCandidates(brief), sources);
   } catch {
-    return mockDiscoveryCandidates(brief);
+    return scoreCandidates(brief, mockDiscoveryCandidates(brief), sources);
   }
 }
 

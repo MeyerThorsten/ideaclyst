@@ -309,7 +309,7 @@
         <div class="ic">✦</div>
         <div>
           <p><strong>The whole app is built around one idea:</strong> two different models, taking adversarial roles and reading each other's work, produce a sharper plan than either alone. Everything else — the disk store, the polling UI, the mode switch — exists to serve that deliberation.</p>
-          <p style="margin-top:.5rem"><strong>New:</strong> a web-research <strong>Step 0</strong> (vendored from <a href="https://github.com/AllAboutAI-YT/surfagent">surfagent</a>) headlessly scouts the market/competitors and grounds every council step in real data — plus an <strong>Idea Discovery</strong> mode (<code>/discover</code>) that proposes ideas to promote into a run. Research is best-effort and mode-gated (mock/offline by default), so a run never fails when Chrome is missing. See the README for details.</p>
+          <p style="margin-top:.5rem"><strong>New:</strong> a web-research <strong>Step 0</strong> (vendored from <a href="https://github.com/AllAboutAI-YT/surfagent">surfagent</a>) headlessly scouts the market/competitors and grounds every council step in real data — plus an <strong>Idea Discovery</strong> mode (<code>/discover</code>) that proposes ideas to promote into a run. Research now writes a structured dossier, competitor matrix, opportunity map, validation experiments, distribution plan, kill criteria, MVP scope notes, landing-page critique, watch baseline, and founder brief. Research is best-effort and mode-gated (mock/offline by default), so a run never fails when Chrome is missing. See the README for details.</p>
         </div>
       </div>
     </section>
@@ -328,6 +328,7 @@
         <div class="feature"><div class="k">Resilient</div><h4>Graceful failure</h4><p>A missing or failing CLI marks the run failed with a clear message — completed steps survive.</p></div>
         <div class="feature"><div class="k">Portable</div><h4>Markdown artifacts</h4><p>Each run also writes human-readable <code>.md</code> files you can read or share outside the app.</p></div>
         <div class="feature"><div class="k">Zero creds</div><h4>No secrets handled</h4><p>IdeaClyst never touches API keys — both CLIs authenticate via their own local sessions.</p></div>
+        <div class="feature"><div class="k">Research</div><h4>Evidence toolkit</h4><p>Surfagent research writes <code>RESEARCH_DOSSIER.json</code>, a toolkit tab, a founder brief, and standalone market artifacts.</p></div>
       </div>
     </section>
 
@@ -338,8 +339,8 @@
       <p>IdeaClyst has four layers, and the design discipline is that only <em>one</em> of them knows whether you're in mock or real-CLI mode.</p>
       <div class="grid two">
         <div class="feature"><div class="k">Layer 1 · UI</div><h4>App Router pages</h4><p>Home, idea form (<code>/new</code>), sessions list (<code>/runs</code>), and a live run detail page that polls. Pure client rendering + fetch.</p></div>
-        <div class="feature"><div class="k">Layer 2 · API</div><h4>Route handlers</h4><p><code>/api/runs</code> creates a run and fires the council; <code>/api/runs/[id]</code> returns one run for polling.</p></div>
-        <div class="feature"><div class="k">Layer 3 · Orchestrator</div><h4>The 5-step pipeline</h4><p><code>orchestrator.ts</code> sequences the council, persisting after every step. It calls <code>runAgent()</code> and never learns which backend ran.</p></div>
+        <div class="feature"><div class="k">Layer 2 · API</div><h4>Route handlers</h4><p><code>/api/runs</code> creates a run and fires the council; <code>/api/runs/[id]</code> returns one run for polling; <code>/api/runs/[id]/research</code> refreshes only research artifacts.</p></div>
+        <div class="feature"><div class="k">Layer 3 · Orchestrator</div><h4>The 5-step pipeline</h4><p><code>orchestrator.ts</code> sequences the council and persists after every step, including the structured research toolkit files created during Step 0.</p></div>
         <div class="feature"><div class="k">Layer 4 · Agents + Store</div><h4>The mode seam &amp; disk</h4><p><code>agents/</code> is the only mode-aware code; <code>runs/store.ts</code> reads &amp; writes the on-disk source of truth.</p></div>
       </div>
       <pre><span class="c">// the only branch that knows the mode — agents/index.ts</span>
@@ -369,7 +370,7 @@
           <div class="body" style="border-top:3px solid var(--ember)">
             <span class="who" style="color:var(--ember)"><i class="swatch" style="width:10px;height:10px;background:var(--ember)"></i> Surfagent · Web research</span>
             <h4>Market research</h4>
-            <p>Before the council deliberates, headless Chrome scouts the web for the idea's market and competitors and writes a research memo that grounds every later step. Best-effort: if Chrome is missing or a search is blocked it falls back to offline synthesis — the run never fails. Can be toggled off per run in the idea form.</p>
+            <p>Before the council deliberates, headless Chrome scouts the web for the idea's market and competitors and writes a research memo plus a structured toolkit that grounds every later step. Best-effort: if Chrome is missing or a search is blocked it falls back to offline synthesis — the run never fails. Can be toggled off per run in the idea form or refreshed later without rerunning the council.</p>
             <div class="sees"><b>Sees:</b> <span class="tag brief">idea brief</span> <span class="tag">+ live web</span></div>
           </div>
         </div>
@@ -438,16 +439,17 @@
       <p>Most of IdeaClyst evaluates an idea you bring. <strong>Idea Discovery</strong> (the <code>/discover</code> route) does the opposite — it <em>finds</em> ideas for you, grounded in what people are actually struggling with on the web. The blank page is the hardest part of building; Discovery replaces it with real demand signals.</p>
       <div class="grid two">
         <div class="feature"><div class="k">1 · Brief</div><h4>You frame the hunt</h4><p>A market or space — “visionOS apps,” “AI for accountants” — <strong>plus your goal</strong> (commercial / portfolio / learning / personal) and <strong>build capacity</strong> (solo / team / AI-assisted), and any constraints. These shape everything that follows.</p></div>
-        <div class="feature"><div class="k">2 · Scout</div><h4>Surfagent sweeps the web</h4><p>Headless Chrome scouts curated sources — Hacker News, Product Hunt, Reddit, GitHub trending — for problems, “I wish there was…”, and recent launches. Each source is best-effort and skipped-with-note if it's walled or blocked.</p></div>
+        <div class="feature"><div class="k">2 · Scout</div><h4>Surfagent sweeps the web</h4><p>Headless Chrome scouts source-specific lanes — Hacker News, Reddit, Product Hunt, GitHub, commercial review/pricing pages, and general web — for problems, “I wish there was…”, launches, and implementation ecosystems.</p></div>
         <div class="feature"><div class="k">3 · Market read</div><h4>An honest landscape first</h4><p>Claude writes a sourced read of the space — a one-line verdict, demand signals, competition, who actually pays, and a realistic outlook for <em>your</em> goal. It leads with the bad news when the market is hard.</p></div>
-        <div class="feature"><div class="k">4 · Ranked concepts</div><h4>Concrete, comparable ideas</h4><p>Then 5–7 candidates, <strong>ranked best-fit-first</strong>, each with a wedge, who pays, <strong>build effort</strong>, <strong>commercial strength</strong>, the biggest risk, why it fits your goal/capacity, and the signal + source.</p></div>
-        <div class="feature"><div class="k">5 · Promote</div><h4>One click to the council</h4><p>“Promote to council” turns a candidate into a normal run — which then runs its own market-research Step 0 and the full 5-step deliberation.</p></div>
+        <div class="feature"><div class="k">4 · Opportunity map</div><h4>Find the wedge zone</h4><p>The scout creates a high-pain/competition map so you can see sharp wedges, crowded-but-validated ideas, exploratory bets, and likely skips before choosing a candidate.</p></div>
+        <div class="feature"><div class="k">5 · Ranked concepts</div><h4>Concrete, comparable ideas</h4><p>Then 5–7 candidates, <strong>ranked best-fit-first</strong>, each with a wedge, who pays, build effort, commercial strength, biggest risk, fit, signal + source, confidence score, and kill criteria.</p></div>
+        <div class="feature"><div class="k">6 · Promote</div><h4>One click to the council</h4><p>“Promote to council” turns a candidate into a normal run — which then runs its own market-research Step 0 and the full 5-step deliberation.</p></div>
       </div>
       <div class="note">
         <div class="ic">◆</div>
         <div><p><strong>A first-class feature.</strong> Like research, Discovery is mode-gated (deterministic offline candidates in mock; live scouting + synthesis in CLI mode) and best-effort — it <em>always</em> returns candidates, even offline or when a source is blocked.</p></div>
       </div>
-      <p>Discoveries persist on disk under <code>.ideaclyst/discoveries/&lt;id&gt;/</code> (a <code>discovery.json</code> + <code>CANDIDATES.md</code>), and the discovery page polls live, just like a run. Code lives in <code>src/lib/discovery/</code> with the scout/synthesis in <code>src/lib/research/</code>.</p>
+      <p>Discoveries persist on disk under <code>.ideaclyst/discoveries/&lt;id&gt;/</code> (a <code>discovery.json</code>, <code>MARKET_READ.md</code>, <code>OPPORTUNITY_MAP.md</code>, and <code>CANDIDATES.md</code>), and the discovery page polls live, just like a run. Code lives in <code>src/lib/discovery/</code> with the scout/synthesis in <code>src/lib/research/</code>.</p>
     </section>
 
     <!-- LIFECYCLE -->
@@ -537,6 +539,17 @@ codex exec --json --skip-git-repo-check --ephemeral \
       ├─ run.json                  <span class="cmt"># ← single source of truth</span>
       ├─ IDEA.md                   <span class="cmt"># the brief, human-readable</span>
       ├─ RESEARCH_FINDINGS.md      <span class="cmt"># step 0 (web research)</span>
+      ├─ RESEARCH_DOSSIER.json     <span class="cmt"># structured evidence</span>
+      ├─ RESEARCH_TOOLKIT.md       <span class="cmt"># all research tools</span>
+      ├─ COMPETITOR_MATRIX.md      <span class="cmt"># competitor comparison</span>
+      ├─ OPPORTUNITY_MAP.md        <span class="cmt"># opportunity zones</span>
+      ├─ VALIDATION_EXPERIMENTS.md <span class="cmt"># source-grounded tests</span>
+      ├─ DISTRIBUTION_PLAN.md      <span class="cmt"># early channels</span>
+      ├─ IDEA_GRAVEYARD.md         <span class="cmt"># kill criteria</span>
+      ├─ MVP_SCOPE_NEGOTIATION.md  <span class="cmt"># scope decisions</span>
+      ├─ LANDING_PAGE_CRITIC.md    <span class="cmt"># competitor page critique</span>
+      ├─ COMPETITOR_WATCH.md       <span class="cmt"># local watch baseline</span>
+      ├─ FOUNDER_BRIEF.md          <span class="cmt"># concise founder brief</span>
       ├─ PRODUCT_STRATEGY.md       <span class="cmt"># step 1</span>
       ├─ TECHNICAL_ARCHITECTURE.md <span class="cmt"># step 2</span>
       ├─ CRITIQUES.md              <span class="cmt"># steps 3 + 4 combined</span>

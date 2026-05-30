@@ -79,6 +79,27 @@ export default function CandidateCard({
         </div>
       ) : null}
 
+      {candidate.confidence ? (
+        <div className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+          <div className="flex items-center justify-between text-xs font-medium text-zinc-700">
+            <span>Confidence</span>
+            <span>{candidate.confidence.overall}/100</span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-200">
+            <div
+              className="h-full rounded-full bg-emerald-500"
+              style={{ width: `${Math.max(0, Math.min(100, candidate.confidence.overall))}%` }}
+            />
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-zinc-500">
+            <span>Demand {candidate.confidence.demandEvidence}/5</span>
+            <span>Build {candidate.confidence.buildFit}/5</span>
+            <span>Money {candidate.confidence.monetizationClarity}/5</span>
+            <span>Novelty {candidate.confidence.novelty}/5</span>
+          </div>
+        </div>
+      ) : null}
+
       <dl className="mt-3 space-y-1.5 text-xs text-zinc-500">
         {candidate.targetCustomer ? (
           <div><dt className="inline font-medium text-zinc-600">Who pays: </dt><dd className="inline">{candidate.targetCustomer}</dd></div>
@@ -91,6 +112,9 @@ export default function CandidateCard({
         ) : null}
         {candidate.signal ? (
           <div><dt className="inline font-medium text-zinc-600">Signal: </dt><dd className="inline">{candidate.signal}</dd></div>
+        ) : null}
+        {candidate.killCriteria?.length ? (
+          <div><dt className="inline font-medium text-zinc-600">Kill if: </dt><dd className="inline">{candidate.killCriteria[0]}</dd></div>
         ) : null}
       </dl>
 

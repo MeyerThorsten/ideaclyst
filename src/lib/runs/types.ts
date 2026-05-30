@@ -17,6 +17,10 @@ export type RunStatus = "queued" | "running" | "completed" | "failed";
 export interface RunOutputs {
   // Web research gathered before the council deliberates (Markdown):
   researchFindings: string;
+  /** Structured surfagent-derived toolkit rendered as Markdown. */
+  researchToolkit: string;
+  /** Concise founder-ready brief generated from the research toolkit. */
+  founderBrief: string;
   productStrategy: string;
   technicalArchitecture: string;
   claudeCritique: string;
@@ -76,6 +80,8 @@ export const RUN_GOALS: RunGoal[] = [
 export function emptyOutputs(): RunOutputs {
   return {
     researchFindings: "",
+    researchToolkit: "",
+    founderBrief: "",
     productStrategy: "",
     technicalArchitecture: "",
     claudeCritique: "",

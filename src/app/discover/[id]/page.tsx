@@ -157,6 +157,18 @@ export default function DiscoveryDetailPage({
         </section>
       ) : null}
 
+      {discovery.opportunityMap ? (
+        <section className="rounded-2xl border border-zinc-200 bg-white p-6">
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+            Opportunity map
+          </h2>
+          <article
+            className="max-w-none text-[15px]"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(discovery.opportunityMap) }}
+          />
+        </section>
+      ) : null}
+
       {discovery.candidates.length > 0 ? (
         <div>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500">

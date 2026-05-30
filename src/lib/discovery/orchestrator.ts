@@ -9,6 +9,7 @@
 import { getDiscovery, updateDiscovery, writeDiscoveryFile } from "./store";
 import { Discovery, IdeaCandidate } from "./types";
 import { scoutMarket, marketReadFor, candidatesFor } from "../research";
+import { renderOpportunityMapMarkdown } from "../research/artifacts";
 
 function candidatesMarkdown(domain: string, list: IdeaCandidate[]): string {
   const head = `# Idea candidates — ${domain}\n`;
@@ -28,6 +29,8 @@ function candidatesMarkdown(domain: string, list: IdeaCandidate[]): string {
         c.risk ? `\n**Risk:** ${c.risk}` : "",
         c.fit ? `\n**Fit:** ${c.fit}` : "",
         c.signal ? `\n**Signal:** ${c.signal}` : "",
+        c.confidence ? `\n**Confidence:** ${c.confidence.overall}/100` : "",
+        c.killCriteria?.length ? `\n**Kill criteria:** ${c.killCriteria.join("; ")}` : "",
         c.sourceUrl ? `\n**Source:** ${c.sourceUrl}` : "",
         "",
       ]
@@ -58,9 +61,19 @@ export async function startDiscovery(id: string): Promise<void> {
     const notes = scout.note
       ? `${scout.degraded ? "Partial/offline: " : ""}${scout.note}`
       : "Live web scouting.";
+    const opportunityMap = scout.opportunityMap
+      ? renderOpportunityMapMarkdown(scout.opportunityMap)
+      : "";
+    if (opportunityMap) {
+      await writeDiscoveryFile(id, "OPPORTUNITY_MAP.md", opportunityMap);
+    }
 
     // Stage 2 — honest market read.
-    await updateDiscovery(id, { currentStep: "Reading the market", scoutNotes: notes });
+    await updateDiscovery(id, {
+      currentStep: "Reading the market",
+      scoutNotes: notes,
+      opportunityMap,
+    });
     const marketRead = await marketReadFor(brief, scout.sources);
     await writeDiscoveryFile(id, "MARKET_READ.md", marketRead);
     await updateDiscovery(id, { marketRead, currentStep: "Proposing ideas" });

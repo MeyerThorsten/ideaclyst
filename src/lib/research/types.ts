@@ -10,11 +10,114 @@ export interface WebSearchResult {
   snippet: string;
 }
 
+export type ResearchSourceType =
+  | "search"
+  | "competitor"
+  | "forum"
+  | "launch"
+  | "code"
+  | "review"
+  | "pricing"
+  | "community"
+  | "docs";
+
 export interface ResearchSource {
   url: string;
   title: string;
   summary: string;
   kind: "serp" | "page";
+  sourceType?: ResearchSourceType;
+  sourceName?: string;
+}
+
+export interface ResearchTimelineEvent {
+  at: string;
+  label: string;
+  detail: string;
+  status: "done" | "partial" | "skipped" | "failed";
+}
+
+export interface DossierEntry {
+  id: string;
+  url: string;
+  title: string;
+  sourceType: ResearchSourceType;
+  sourceName?: string;
+  retrievedAt: string;
+  summary: string;
+  extractedClaims: string[];
+  painSignals: string[];
+  pricingSignals: string[];
+  competitorsMentioned: string[];
+  confidence: number;
+}
+
+export interface CompetitorProfile {
+  name: string;
+  url: string;
+  positioning: string;
+  targetCustomer: string;
+  pricingSignal: string;
+  featureSignals: string[];
+  strengths: string[];
+  weaknesses: string[];
+  differentiationOpening: string;
+  landingPageCritique: string;
+}
+
+export interface OpportunityZone {
+  quadrant:
+    | "high-pain-low-competition"
+    | "high-pain-high-competition"
+    | "low-pain-low-competition"
+    | "low-pain-high-competition";
+  label: string;
+  description: string;
+  opportunities: string[];
+}
+
+export interface DistributionChannel {
+  channel: string;
+  whyItFits: string;
+  firstMove: string;
+  evidenceUrl?: string;
+}
+
+export interface ValidationExperiment {
+  name: string;
+  audience: string;
+  channel: string;
+  script: string;
+  successMetric: string;
+  evidenceUrl?: string;
+}
+
+export interface ScopeNegotiation {
+  mustHave: string[];
+  wedgeOnly: string[];
+  defer: string[];
+  dangerousScopeCreep: string[];
+}
+
+export interface CompetitorWatchItem {
+  target: string;
+  url: string;
+  watchFor: string[];
+  baseline: string;
+}
+
+export interface ResearchToolkit {
+  generatedAt: string;
+  timeline: ResearchTimelineEvent[];
+  dossier: DossierEntry[];
+  competitorMatrix: CompetitorProfile[];
+  opportunityMap: OpportunityZone[];
+  distributionChannels: DistributionChannel[];
+  validationExperiments: ValidationExperiment[];
+  killCriteria: string[];
+  scopeNegotiation: ScopeNegotiation;
+  founderBrief: string;
+  watchlist: CompetitorWatchItem[];
 }
 
 export interface ResearchResult {
@@ -23,6 +126,7 @@ export interface ResearchResult {
   note?: string; // human-readable status, surfaced in the findings doc
   findings: string; // researchFindings Markdown — ALWAYS non-empty
   sources: ResearchSource[];
+  toolkit?: ResearchToolkit;
 }
 
 export type EffortLevel = "low" | "moderate" | "high";
@@ -39,6 +143,17 @@ export interface IdeaCandidate {
   fit?: string; // why it fits the stated goal + capacity
   signal?: string; // the demand signal that surfaced it
   sourceUrl?: string;
+  confidence?: CandidateConfidence;
+  killCriteria?: string[];
+}
+
+export interface CandidateConfidence {
+  demandEvidence: number;
+  competitionIntensity: number;
+  buildFit: number;
+  monetizationClarity: number;
+  novelty: number;
+  overall: number;
 }
 
 export interface DiscoveryScoutResult {
@@ -46,6 +161,8 @@ export interface DiscoveryScoutResult {
   degraded: boolean;
   note?: string;
   sources: ResearchSource[];
+  timeline?: ResearchTimelineEvent[];
+  opportunityMap?: OpportunityZone[];
 }
 
 /** The founder's brief for an idea-discovery run. */

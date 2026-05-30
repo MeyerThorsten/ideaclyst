@@ -36,6 +36,8 @@ export interface Discovery {
   currentStep?: string;
   /** Honest market landscape (Markdown), filled before candidates. */
   marketRead: string;
+  /** Source-derived opportunity zones for this market. */
+  opportunityMap: string;
   candidates: IdeaCandidate[];
   /** Status/degraded note about scouting. */
   scoutNotes: string;
