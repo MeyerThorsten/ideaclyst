@@ -309,7 +309,7 @@
         <div class="ic">✦</div>
         <div>
           <p><strong>The whole app is built around one idea:</strong> two different models, taking adversarial roles and reading each other's work, produce a sharper plan than either alone. Everything else — the disk store, the polling UI, the mode switch — exists to serve that deliberation.</p>
-          <p style="margin-top:.5rem"><strong>New:</strong> a web-research <strong>Step 0</strong> (vendored from <a href="https://github.com/AllAboutAI-YT/surfagent">surfagent</a>) headlessly scouts the market/competitors and grounds every council step in real data — plus an <strong>Idea Discovery</strong> mode (<code>/discover</code>) that proposes ideas to promote into a run. Research now writes a structured dossier, competitor matrix, opportunity map, validation experiments, distribution plan, kill criteria, MVP scope notes, landing-page critique, watch baseline, and founder brief. Research is best-effort and mode-gated (mock/offline by default), so a run never fails when Chrome is missing. See the README for details.</p>
+          <p style="margin-top:.5rem"><strong>New:</strong> a web-research <strong>Step 0</strong> (vendored from <a href="https://github.com/AllAboutAI-YT/surfagent">surfagent</a>) headlessly scouts the market/competitors and grounds every council step in real data — plus an <strong>Idea Discovery</strong> mode (<code>/discover</code>) that proposes ideas to promote into a run. Research now writes a structured dossier, competitor matrix, opportunity map, validation experiments, distribution plan, kill criteria, MVP scope notes, landing-page critique, watch baseline, and founder brief. Discovery candidates also get full idea reports with scorecards, offer ladders, proof signals, execution plans, founder fit, and roasts. Research is best-effort and mode-gated (mock/offline by default), so a run never fails when Chrome is missing. See the README for details.</p>
         </div>
       </div>
     </section>
@@ -329,6 +329,7 @@
         <div class="feature"><div class="k">Portable</div><h4>Markdown artifacts</h4><p>Each run also writes human-readable <code>.md</code> files you can read or share outside the app.</p></div>
         <div class="feature"><div class="k">Zero creds</div><h4>No secrets handled</h4><p>IdeaClyst never touches API keys — both CLIs authenticate via their own local sessions.</p></div>
         <div class="feature"><div class="k">Research</div><h4>Evidence toolkit</h4><p>Surfagent research writes <code>RESEARCH_DOSSIER.json</code>, a toolkit tab, a founder brief, and standalone market artifacts.</p></div>
+        <div class="feature"><div class="k">Discovery</div><h4>Full idea reports</h4><p>Every candidate has a report page with business fit, offer ladder, why-now, proof, market gap, framework, keyword, founder-fit, and roast sections.</p></div>
       </div>
     </section>
 
@@ -443,13 +444,14 @@
         <div class="feature"><div class="k">3 · Market read</div><h4>An honest landscape first</h4><p>Claude writes a sourced read of the space — a one-line verdict, demand signals, competition, who actually pays, and a realistic outlook for <em>your</em> goal. It leads with the bad news when the market is hard.</p></div>
         <div class="feature"><div class="k">4 · Opportunity map</div><h4>Find the wedge zone</h4><p>The scout creates a high-pain/competition map so you can see sharp wedges, crowded-but-validated ideas, exploratory bets, and likely skips before choosing a candidate.</p></div>
         <div class="feature"><div class="k">5 · Ranked concepts</div><h4>Concrete, comparable ideas</h4><p>Then 5–7 candidates, <strong>ranked best-fit-first</strong>, each with a wedge, who pays, build effort, commercial strength, biggest risk, fit, signal + source, confidence score, and kill criteria.</p></div>
-        <div class="feature"><div class="k">6 · Promote</div><h4>One click to the council</h4><p>“Promote to council” turns a candidate into a normal run — which then runs its own market-research Step 0 and the full 5-step deliberation.</p></div>
+        <div class="feature"><div class="k">6 · Full report</div><h4>Inspect before committing</h4><p>Each candidate opens into a full report: opportunity scorecard, business fit, offer ladder, why-now, proof signals, market gap, execution plan, framework fit, community and keyword intelligence, founder fit, and roast.</p></div>
+        <div class="feature"><div class="k">7 · Promote</div><h4>One click to the council</h4><p>“Promote to council” turns a candidate into a normal run and carries the report thesis, founder fit, core offer, and roast verdict into the council brief.</p></div>
       </div>
       <div class="note">
         <div class="ic">◆</div>
         <div><p><strong>A first-class feature.</strong> Like research, Discovery is mode-gated (deterministic offline candidates in mock; live scouting + synthesis in CLI mode) and best-effort — it <em>always</em> returns candidates, even offline or when a source is blocked.</p></div>
       </div>
-      <p>Discoveries persist on disk under <code>.ideaclyst/discoveries/&lt;id&gt;/</code> (a <code>discovery.json</code>, <code>MARKET_READ.md</code>, <code>OPPORTUNITY_MAP.md</code>, and <code>CANDIDATES.md</code>), and the discovery page polls live, just like a run. Code lives in <code>src/lib/discovery/</code> with the scout/synthesis in <code>src/lib/research/</code>.</p>
+      <p>Discoveries persist on disk under <code>.ideaclyst/discoveries/&lt;id&gt;/</code> (a <code>discovery.json</code>, <code>MARKET_READ.md</code>, <code>OPPORTUNITY_MAP.md</code>, <code>CANDIDATES.md</code>, and <code>CANDIDATE_REPORTS.md</code>), and the discovery page polls live, just like a run. Code lives in <code>src/lib/discovery/</code> with the scout/synthesis and report builder in <code>src/lib/research/</code>.</p>
     </section>
 
     <!-- LIFECYCLE -->
@@ -534,7 +536,7 @@ codex exec --json --skip-git-repo-check --ephemeral \
       <h3>On-disk layout</h3>
       <div class="tree">
 <span class="d">.ideaclyst/</span>                          <span class="cmt"># IDEACLYST_DATA_DIR (default)</span>
-└─ <span class="d">runs/</span>
+├─ <span class="d">runs/</span>
    └─ <span class="d">&lt;runId&gt;/</span>                     <span class="cmt"># timestamp-prefixed slug</span>
       ├─ run.json                  <span class="cmt"># ← single source of truth</span>
       ├─ IDEA.md                   <span class="cmt"># the brief, human-readable</span>
@@ -554,7 +556,14 @@ codex exec --json --skip-git-repo-check --ephemeral \
       ├─ TECHNICAL_ARCHITECTURE.md <span class="cmt"># step 2</span>
       ├─ CRITIQUES.md              <span class="cmt"># steps 3 + 4 combined</span>
       ├─ FINAL_PLAN.md             <span class="cmt"># step 5</span>
-      └─ TRANSCRIPT.md             <span class="cmt"># running log of every exchange</span>
+	      └─ TRANSCRIPT.md             <span class="cmt"># running log of every exchange</span>
+└─ <span class="d">discoveries/</span>
+   └─ <span class="d">&lt;discoveryId&gt;/</span>
+      ├─ discovery.json               <span class="cmt"># market read, candidates, reports</span>
+      ├─ MARKET_READ.md               <span class="cmt"># market landscape</span>
+      ├─ OPPORTUNITY_MAP.md           <span class="cmt"># wedge zones</span>
+      ├─ CANDIDATES.md                <span class="cmt"># ranked ideas</span>
+      └─ CANDIDATE_REPORTS.md         <span class="cmt"># full idea reports</span>
       </div>
       <h3>The run record</h3>
       <p>A run carries the brief (title, idea, goal, optional target customer / constraints / preferred stack), a <code>status</code> of <code>queued → running → completed | failed</code>, a human-readable <code>currentStep</code> label for the UI, and an <code>outputs</code> object that starts empty and fills in. Run IDs are timestamp-prefixed slugs, so a reverse string-sort yields newest-first for free.</p>

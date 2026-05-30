@@ -73,6 +73,7 @@ export async function createDiscovery(input: CreateDiscoveryInput): Promise<Disc
     marketRead: "",
     opportunityMap: "",
     candidates: [],
+    sources: [],
     scoutNotes: "",
   };
   await persist(d);

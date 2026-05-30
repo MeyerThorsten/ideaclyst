@@ -145,6 +145,7 @@ export interface IdeaCandidate {
   sourceUrl?: string;
   confidence?: CandidateConfidence;
   killCriteria?: string[];
+  report?: CandidateInsightReport;
 }
 
 export interface CandidateConfidence {
@@ -154,6 +155,166 @@ export interface CandidateConfidence {
   monetizationClarity: number;
   novelty: number;
   overall: number;
+}
+
+export interface InsightScore {
+  label: string;
+  score: number;
+  rating: string;
+  detail: string;
+}
+
+export interface BusinessFitInsight {
+  revenuePotential: string;
+  executionDifficulty: string;
+  goToMarket: string;
+  founderFit: string;
+}
+
+export interface ValueLadderStage {
+  stage: "lead-magnet" | "frontend" | "core" | "continuity" | "backend";
+  label: string;
+  offer: string;
+  price: string;
+  valueProvided: string;
+  goal: string;
+}
+
+export interface WhyNowFactor {
+  label: string;
+  score: number;
+  signal: string;
+  detail: string;
+  evidenceUrl?: string;
+}
+
+export interface ProofSignal {
+  category: string;
+  score: number;
+  title: string;
+  detail: string;
+  evidenceUrl?: string;
+}
+
+export interface MarketGapInsight {
+  underservedSegments: string[];
+  featureGaps: string[];
+  differentiationLevers: string[];
+}
+
+export interface ExecutionChannel {
+  channel: string;
+  cadence: string;
+  why: string;
+  format: string;
+  targetMetric: string;
+}
+
+export interface ExecutionPlanInsight {
+  businessType: string;
+  timeline: string;
+  budget: string;
+  buyerPersonas: string[];
+  painPoints: string[];
+  mvpApproach: string;
+  initialOffer: string;
+  acquisitionChannels: ExecutionChannel[];
+  milestones: string[];
+  successMetrics: string[];
+  risks: string[];
+  nextActions: string[];
+}
+
+export interface ValueEquationInsight {
+  dreamOutcome: InsightScore;
+  perceivedLikelihood: InsightScore;
+  timeDelay: InsightScore;
+  effortAndSacrifice: InsightScore;
+  improvements: string[];
+}
+
+export interface MarketMatrixInsight {
+  uniqueness: number;
+  customerValue: number;
+  quadrant: string;
+  detail: string;
+}
+
+export interface ACPInsight {
+  audience: InsightScore;
+  community: InsightScore;
+  product: InsightScore;
+}
+
+export interface CategorizationInsight {
+  type: string;
+  market: string;
+  target: string;
+  mainCompetitor: string;
+  trendAnalysis: string;
+}
+
+export interface FrameworkInsights {
+  valueEquation: ValueEquationInsight;
+  marketMatrix: MarketMatrixInsight;
+  acp: ACPInsight;
+  categorization: CategorizationInsight;
+}
+
+export interface CommunitySignal {
+  channel: string;
+  count: string;
+  signal: string;
+  firstMove: string;
+}
+
+export interface KeywordInsight {
+  keyword: string;
+  volume: string;
+  growth: string;
+  competition: "low" | "medium" | "high";
+}
+
+export interface KeywordAnalysis {
+  summary: string;
+  fastestGrowing: KeywordInsight[];
+  highestVolume: KeywordInsight[];
+  mostRelevant: KeywordInsight[];
+}
+
+export interface FounderFitInsight {
+  score: number;
+  idealFor: string;
+  advantages: string[];
+  gaps: string[];
+  avoidIf: string[];
+  nextMove: string;
+}
+
+export interface RoastInsight {
+  verdict: string;
+  blindSpots: string[];
+  hardQuestions: string[];
+  deRiskingMoves: string[];
+}
+
+export interface CandidateInsightReport {
+  generatedAt: string;
+  oneLine: string;
+  scores: InsightScore[];
+  businessFit: BusinessFitInsight;
+  valueLadder: ValueLadderStage[];
+  whyNow: WhyNowFactor[];
+  proofSignals: ProofSignal[];
+  marketGap: MarketGapInsight;
+  executionPlan: ExecutionPlanInsight;
+  frameworks: FrameworkInsights;
+  communitySignals: CommunitySignal[];
+  keywordAnalysis: KeywordAnalysis;
+  founderFit: FounderFitInsight;
+  roast: RoastInsight;
+  buildActions: string[];
+  sources: ResearchSource[];
 }
 
 export interface DiscoveryScoutResult {

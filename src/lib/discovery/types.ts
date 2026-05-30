@@ -5,7 +5,7 @@
  * run. Persisted on disk like runs (see store.ts).
  */
 
-import { IdeaCandidate } from "../research/types";
+import { IdeaCandidate, ResearchSource } from "../research/types";
 
 export type { IdeaCandidate };
 
@@ -39,6 +39,8 @@ export interface Discovery {
   /** Source-derived opportunity zones for this market. */
   opportunityMap: string;
   candidates: IdeaCandidate[];
+  /** Sources captured during scouting, reused by per-candidate reports. */
+  sources: ResearchSource[];
   /** Status/degraded note about scouting. */
   scoutNotes: string;
 }

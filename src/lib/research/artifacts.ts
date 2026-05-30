@@ -21,6 +21,7 @@ import {
   ScopeNegotiation,
   ValidationExperiment,
 } from "./types";
+import { buildCandidateInsightReport } from "./idea-reports";
 
 const PAIN_WORDS = [
   "problem",
@@ -718,7 +719,7 @@ export function scoreCandidates(
       novelty,
       overall,
     };
-    return {
+    const enriched = {
       ...candidate,
       confidence,
       killCriteria: [
@@ -728,6 +729,10 @@ export function scoreCandidates(
           ? "A stronger incumbent already owns the exact wedge with better distribution."
           : "The idea remains interesting but cannot find a narrow enough wedge.",
       ],
+    };
+    return {
+      ...enriched,
+      report: buildCandidateInsightReport(brief, enriched, sources),
     };
   });
 }

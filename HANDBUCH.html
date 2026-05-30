@@ -293,7 +293,7 @@
         <div class="ic">✦</div>
         <div>
           <p><strong>Die ganze App dreht sich um eine Idee:</strong> Zwei verschiedene Modelle, die gegensätzliche Rollen einnehmen und die Arbeit des anderen lesen, erzeugen einen schärferen Plan als jedes für sich. Alles andere — der Disk-Store, die Polling-UI, der Mode-Switch — existiert nur, um diese Beratung zu ermöglichen.</p>
-          <p style="margin-top:.5rem"><strong>Neu:</strong> ein Web-Research-<strong>Schritt&nbsp;0</strong> (aus <a href="https://github.com/AllAboutAI-YT/surfagent">surfagent</a> übernommen) durchsucht headless Markt/Wettbewerber und erdet jeden Council-Schritt mit echten Daten — plus ein <strong>Idea-Discovery</strong>-Modus (<code>/discover</code>), der Ideen vorschlägt, die du in einen Run überführen kannst. Research ist best-effort und modusabhängig (standardmäßig Mock/offline) — ein Run scheitert nie, wenn Chrome fehlt. Details in der README.</p>
+          <p style="margin-top:.5rem"><strong>Neu:</strong> ein Web-Research-<strong>Schritt&nbsp;0</strong> (aus <a href="https://github.com/AllAboutAI-YT/surfagent">surfagent</a> übernommen) durchsucht headless Markt/Wettbewerber und erdet jeden Council-Schritt mit echten Daten — plus ein <strong>Idea-Discovery</strong>-Modus (<code>/discover</code>), der Ideen vorschlägt, die du in einen Run überführen kannst. Discovery-Kandidaten bekommen jetzt vollständige Idea-Reports mit Scorecards, Offer Ladder, Proof-Signalen, Ausführungsplan, Founder Fit und Roast. Research ist best-effort und modusabhängig (standardmäßig Mock/offline) — ein Run scheitert nie, wenn Chrome fehlt. Details in der README.</p>
         </div>
       </div>
     </section>
@@ -313,6 +313,7 @@
         <div class="feature"><div class="k">Portabel</div><h4>Markdown-Artefakte</h4><p>Jeder Run schreibt zusätzlich lesbare <code>.md</code>-Dateien, die du außerhalb der App lesen oder teilen kannst.</p></div>
         <div class="feature"><div class="k">Keine Secrets</div><h4>Keine Credentials</h4><p>IdeaClyst fasst nie API-Schlüssel an — beide CLIs authentifizieren über ihre eigene lokale Session.</p></div>
         <div class="feature"><div class="k">Recherche</div><h4>Evidence Toolkit</h4><p>Surfagent-Recherche schreibt <code>RESEARCH_DOSSIER.json</code>, einen Toolkit-Tab, einen Founder-Brief und eigenständige Markt-Artefakte.</p></div>
+        <div class="feature"><div class="k">Discovery</div><h4>Vollständige Idea-Reports</h4><p>Jeder Kandidat hat eine Report-Seite mit Business Fit, Offer Ladder, Why-now, Proof, Market Gap, Frameworks, Keywords, Founder Fit und Roast.</p></div>
       </div>
     </section>
 
@@ -427,13 +428,14 @@
         <div class="feature"><div class="k">3 · Marktanalyse</div><h4>Zuerst eine ehrliche Landschaft</h4><p>Claude schreibt eine quellenbasierte Analyse — ein Ein-Zeilen-Urteil, Nachfrage-Signale, Wettbewerb, wer wirklich zahlt, und ein realistischer Ausblick für <em>dein</em> Ziel. Bei schwierigem Markt führt sie mit den schlechten Nachrichten.</p></div>
         <div class="feature"><div class="k">4 · Opportunity Map</div><h4>Den Wedge-Bereich finden</h4><p>Der Scout erzeugt eine Pain-/Wettbewerbs-Matrix, damit scharfe Wedges, validierte aber volle Märkte, explorative Ideen und wahrscheinliche Skips sichtbar werden.</p></div>
         <div class="feature"><div class="k">5 · Ranking</div><h4>Konkrete, vergleichbare Ideen</h4><p>Dann 5–7 Kandidaten, nach Eignung sortiert, jeder mit Wedge, Zahler, Build-Aufwand, kommerzieller Stärke, Risiko, Fit, Signal + Quelle, Confidence-Score und Kill-Kriterien.</p></div>
-        <div class="feature"><div class="k">6 · Promote</div><h4>Ein Klick zum Council</h4><p>„Promote to council“ macht aus einem Kandidaten einen normalen Run — der dann seine eigene Marktrecherche (Schritt 0) und die vollen 5 Council-Schritte durchläuft.</p></div>
+        <div class="feature"><div class="k">6 · Full Report</div><h4>Prüfen vor dem Commit</h4><p>Jeder Kandidat öffnet einen vollständigen Report: Opportunity-Scorecard, Business Fit, Offer Ladder, Why-now, Proof-Signale, Market Gap, Execution Plan, Framework Fit, Community-/Keyword-Intelligence, Founder Fit und Roast.</p></div>
+        <div class="feature"><div class="k">7 · Promote</div><h4>Ein Klick zum Council</h4><p>„Promote to council“ macht aus einem Kandidaten einen normalen Run und gibt Thesis, Founder Fit, Core Offer und Roast-Urteil an den Council weiter.</p></div>
       </div>
       <div class="note">
         <div class="ic">◆</div>
         <div><p><strong>Eine Kernfunktion.</strong> Wie die Recherche ist Discovery modusabhängig (deterministische Offline-Kandidaten im Mock; Live-Scouting + Synthese im CLI-Modus) und best-effort — es liefert <em>immer</em> Kandidaten, auch offline oder wenn eine Quelle blockiert ist.</p></div>
       </div>
-      <p>Discoveries werden auf Platte unter <code>.ideaclyst/discoveries/&lt;id&gt;/</code> gespeichert (<code>discovery.json</code>, <code>MARKET_READ.md</code>, <code>OPPORTUNITY_MAP.md</code> und <code>CANDIDATES.md</code>), und die Discovery-Seite pollt live, genau wie ein Run. Der Code liegt in <code>src/lib/discovery/</code>, Scout/Synthese in <code>src/lib/research/</code>.</p>
+      <p>Discoveries werden auf Platte unter <code>.ideaclyst/discoveries/&lt;id&gt;/</code> gespeichert (<code>discovery.json</code>, <code>MARKET_READ.md</code>, <code>OPPORTUNITY_MAP.md</code>, <code>CANDIDATES.md</code> und <code>CANDIDATE_REPORTS.md</code>), und die Discovery-Seite pollt live, genau wie ein Run. Der Code liegt in <code>src/lib/discovery/</code>, Scout/Synthese und Report-Builder in <code>src/lib/research/</code>.</p>
     </section>
 
     <!-- LIFECYCLE -->
@@ -518,7 +520,7 @@ codex exec --json --skip-git-repo-check --ephemeral \
       <h3>Layout auf Platte</h3>
       <div class="tree">
 <span class="d">.ideaclyst/</span>                          <span class="cmt"># IDEACLYST_DATA_DIR (Default)</span>
-└─ <span class="d">runs/</span>
+├─ <span class="d">runs/</span>
    └─ <span class="d">&lt;runId&gt;/</span>                     <span class="cmt"># Slug mit Zeitstempel-Präfix</span>
       ├─ run.json                  <span class="cmt"># ← Single Source of Truth</span>
       ├─ IDEA.md                   <span class="cmt"># der Brief, menschenlesbar</span>
@@ -538,7 +540,14 @@ codex exec --json --skip-git-repo-check --ephemeral \
       ├─ TECHNICAL_ARCHITECTURE.md <span class="cmt"># Schritt 2</span>
       ├─ CRITIQUES.md              <span class="cmt"># Schritte 3 + 4 kombiniert</span>
       ├─ FINAL_PLAN.md             <span class="cmt"># Schritt 5</span>
-      └─ TRANSCRIPT.md             <span class="cmt"># laufendes Protokoll aller Austausche</span>
+	      └─ TRANSCRIPT.md             <span class="cmt"># laufendes Protokoll aller Austausche</span>
+└─ <span class="d">discoveries/</span>
+   └─ <span class="d">&lt;discoveryId&gt;/</span>
+      ├─ discovery.json               <span class="cmt"># Marktanalyse, Kandidaten, Reports</span>
+      ├─ MARKET_READ.md               <span class="cmt"># Marktlandschaft</span>
+      ├─ OPPORTUNITY_MAP.md           <span class="cmt"># Wedge-Zonen</span>
+      ├─ CANDIDATES.md                <span class="cmt"># sortierte Ideen</span>
+      └─ CANDIDATE_REPORTS.md         <span class="cmt"># vollständige Idea-Reports</span>
       </div>
       <h3>Der Run-Datensatz</h3>
       <p>Ein Run trägt den Brief (Titel, Idee, Ziel, optional Zielkunde / Constraints / bevorzugter Stack), einen <code>status</code> von <code>queued → running → completed | failed</code>, ein menschenlesbares <code>currentStep</code>-Label für die UI und ein <code>outputs</code>-Objekt, das leer beginnt und sich füllt. Run-IDs haben ein Zeitstempel-Präfix, sodass ein umgekehrter String-Sort gratis „neueste zuerst“ liefert.</p>

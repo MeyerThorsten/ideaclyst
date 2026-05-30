@@ -34,11 +34,25 @@ export async function POST(
   if (!candidate) {
     return NextResponse.json({ error: "Candidate not found" }, { status: 404 });
   }
+  const reportContext = candidate.report
+    ? [
+        `Idea report thesis: ${candidate.report.oneLine}`,
+        `Founder fit: ${candidate.report.founderFit.score}/10 - ${candidate.report.founderFit.nextMove}`,
+        `Core offer: ${candidate.report.valueLadder.find((stage) => stage.stage === "core")?.offer}`,
+        `Roast verdict: ${candidate.report.roast.verdict}`,
+      ]
+    : [];
 
   const run = await createRun({
     title: candidate.title,
     idea: candidate.idea,
     targetCustomer: candidate.targetCustomer,
+    constraints: [
+      discovery.constraints,
+      candidate.fit ? `Fit: ${candidate.fit}` : "",
+      candidate.risk ? `Risk: ${candidate.risk}` : "",
+      ...reportContext,
+    ].filter(Boolean).join("\n"),
     goal: "validate",
   });
   void startRun(run.id);

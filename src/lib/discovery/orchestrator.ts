@@ -10,6 +10,7 @@ import { getDiscovery, updateDiscovery, writeDiscoveryFile } from "./store";
 import { Discovery, IdeaCandidate } from "./types";
 import { scoutMarket, marketReadFor, candidatesFor } from "../research";
 import { renderOpportunityMapMarkdown } from "../research/artifacts";
+import { renderCandidateInsightReportMarkdown } from "../research/idea-reports";
 
 function candidatesMarkdown(domain: string, list: IdeaCandidate[]): string {
   const head = `# Idea candidates — ${domain}\n`;
@@ -32,6 +33,7 @@ function candidatesMarkdown(domain: string, list: IdeaCandidate[]): string {
         c.confidence ? `\n**Confidence:** ${c.confidence.overall}/100` : "",
         c.killCriteria?.length ? `\n**Kill criteria:** ${c.killCriteria.join("; ")}` : "",
         c.sourceUrl ? `\n**Source:** ${c.sourceUrl}` : "",
+        c.report ? `\n${renderCandidateInsightReportMarkdown(c)}` : "",
         "",
       ]
         .filter(Boolean)
@@ -73,6 +75,7 @@ export async function startDiscovery(id: string): Promise<void> {
       currentStep: "Reading the market",
       scoutNotes: notes,
       opportunityMap,
+      sources: scout.sources,
     });
     const marketRead = await marketReadFor(brief, scout.sources);
     await writeDiscoveryFile(id, "MARKET_READ.md", marketRead);
@@ -81,6 +84,13 @@ export async function startDiscovery(id: string): Promise<void> {
     // Stage 3 — ranked candidate concepts.
     const candidates = await candidatesFor(brief, scout.sources, marketRead);
     await writeDiscoveryFile(id, "CANDIDATES.md", candidatesMarkdown(d.domain, candidates));
+    const reportsMarkdown = candidates
+      .map((candidate) => renderCandidateInsightReportMarkdown(candidate))
+      .filter(Boolean)
+      .join("\n\n---\n\n");
+    if (reportsMarkdown) {
+      await writeDiscoveryFile(id, "CANDIDATE_REPORTS.md", reportsMarkdown);
+    }
 
     const patch: Partial<Discovery> = {
       status: "completed",

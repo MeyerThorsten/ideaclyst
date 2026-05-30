@@ -136,7 +136,8 @@ data — and to help you *find* ideas, not just evaluate them.
   background refresh of the surfagent-derived artifacts without rerunning the full
   Claude+Codex council. The page polls until the refreshed toolkit lands on disk.
 - **Idea Discovery** (`/discover`) — don't have an idea yet? Give a market and IdeaClyst
-  finds candidate ideas for you. See its own section below.
+  finds candidate ideas for you, then opens a full report for each one. See its own section
+  below.
 
 Research is **best-effort and mode-gated**, mirroring the agent seam:
 
@@ -175,8 +176,13 @@ candidates, grounded in live demand signals instead of a blank page.
    strength** (strong/medium/weak for your goal), the **biggest risk**, **why it fits**, and the
    **signal + source** that surfaced it. Each card includes a transparent confidence score
    across demand evidence, build fit, monetization clarity, novelty, and competition.
-6. **Promote to council** — one click turns a candidate into a normal run, which then runs its
-   own market-research Step 0 and the full 5-step council.
+6. **Full idea report** — before promoting, every candidate gets an IdeaBrowser-style local
+   report at `/discover/[id]/ideas/[candidateId]`: scorecard, business fit, offer/value ladder,
+   why-now factors, proof signals, market gaps, execution plan, framework fit, community and
+   keyword intelligence, founder fit, and a roast.
+7. **Promote to council** — one click turns a candidate into a normal run, carrying the report
+   thesis, founder-fit note, core offer, and roast verdict into the council brief. The run then
+   executes its own market-research Step 0 and the full 5-step council.
 
 Each stage is **persisted progressively** (scout → market read → concepts), so the page reveals
 them live like a council run.
@@ -191,8 +197,8 @@ them live like a council run.
   `mock`, live scouting + Claude synthesis in `cli`. It always returns candidates — even
   offline or when a source is blocked.
 - Each discovery persists to disk under `.ideaclyst/discoveries/<id>/` (`discovery.json` +
-  `MARKET_READ.md`, `OPPORTUNITY_MAP.md`, and `CANDIDATES.md`); the discovery page polls just
-  like a run.
+  `MARKET_READ.md`, `OPPORTUNITY_MAP.md`, `CANDIDATES.md`, and `CANDIDATE_REPORTS.md`); the
+  discovery page polls just like a run.
 
 ## Request lifecycle
 
@@ -287,27 +293,34 @@ and `run.json` is the single source of truth.
 
 ```
 .ideaclyst/                          # IDEACLYST_DATA_DIR (default)
-└─ runs/
-   └─ <runId>/                       # timestamp-prefixed slug
-      ├─ run.json                    # ← single source of truth
-      ├─ IDEA.md                     # the brief, human-readable
-      ├─ RESEARCH_FINDINGS.md        # step 0 memo
-      ├─ RESEARCH_DOSSIER.json       # structured source evidence
-      ├─ RESEARCH_TOOLKIT.md         # all research tools in one Markdown packet
-      ├─ COMPETITOR_MATRIX.md        # competitor comparison matrix
-      ├─ OPPORTUNITY_MAP.md          # high-pain / competition map
-      ├─ VALIDATION_EXPERIMENTS.md   # source-grounded experiments
-      ├─ DISTRIBUTION_PLAN.md        # where to reach early users
-      ├─ IDEA_GRAVEYARD.md           # kill criteria
-      ├─ MVP_SCOPE_NEGOTIATION.md    # must-have / defer / scope creep
-      ├─ LANDING_PAGE_CRITIC.md      # competitor landing-page critique
-      ├─ COMPETITOR_WATCH.md         # local watch baseline
-      ├─ FOUNDER_BRIEF.md            # concise founder-ready brief
-      ├─ PRODUCT_STRATEGY.md         # step 1
-      ├─ TECHNICAL_ARCHITECTURE.md   # step 2
-      ├─ CRITIQUES.md                # steps 3 + 4 combined
-      ├─ FINAL_PLAN.md               # step 5
-      └─ TRANSCRIPT.md               # running log of every exchange
+├─ runs/
+│  └─ <runId>/                       # timestamp-prefixed slug
+│     ├─ run.json                    # ← single source of truth
+│     ├─ IDEA.md                     # the brief, human-readable
+│     ├─ RESEARCH_FINDINGS.md        # step 0 memo
+│     ├─ RESEARCH_DOSSIER.json       # structured source evidence
+│     ├─ RESEARCH_TOOLKIT.md         # all research tools in one Markdown packet
+│     ├─ COMPETITOR_MATRIX.md        # competitor comparison matrix
+│     ├─ OPPORTUNITY_MAP.md          # high-pain / competition map
+│     ├─ VALIDATION_EXPERIMENTS.md   # source-grounded experiments
+│     ├─ DISTRIBUTION_PLAN.md        # where to reach early users
+│     ├─ IDEA_GRAVEYARD.md           # kill criteria
+│     ├─ MVP_SCOPE_NEGOTIATION.md    # must-have / defer / scope creep
+│     ├─ LANDING_PAGE_CRITIC.md      # competitor landing-page critique
+│     ├─ COMPETITOR_WATCH.md         # local watch baseline
+│     ├─ FOUNDER_BRIEF.md            # concise founder-ready brief
+│     ├─ PRODUCT_STRATEGY.md         # step 1
+│     ├─ TECHNICAL_ARCHITECTURE.md   # step 2
+│     ├─ CRITIQUES.md                # steps 3 + 4 combined
+│     ├─ FINAL_PLAN.md               # step 5
+│     └─ TRANSCRIPT.md               # running log of every exchange
+└─ discoveries/
+   └─ <discoveryId>/
+      ├─ discovery.json              # market read, candidates, reports, source metadata
+      ├─ MARKET_READ.md              # honest market landscape
+      ├─ OPPORTUNITY_MAP.md          # wedge zones
+      ├─ CANDIDATES.md               # ranked candidate ideas
+      └─ CANDIDATE_REPORTS.md        # full per-candidate reports
 ```
 
 A run carries the brief, a `status` of `queued → running → completed | failed`, a
@@ -367,13 +380,14 @@ src/
     new/page.tsx              # idea form
     runs/page.tsx             # sessions list
     runs/[runId]/page.tsx     # live run detail (polls)
+    discover/[id]/ideas/[candidateId]/page.tsx # full candidate report
     api/runs/route.ts         # GET list / POST create (+ fire council)
     api/runs/[runId]/route.ts # GET one
     api/runs/[runId]/research/route.ts # POST rerun research only
-  components/                 # app-shell, idea-form, result-tabs, run-card, …
+  components/                 # app-shell, idea-form, result-tabs, candidate-report, …
   lib/
     agents/                   # runAgent dispatch + mock / claude / codex / prompts
-    research/                 # vendored surfagent CDP modules + research seam (mock/live)
+    research/                 # vendored surfagent CDP modules + research/report seam
     discovery/                # idea-discovery store + orchestrator
     runs/                     # types, on-disk store, final-plan section splitter
     orchestrator.ts           # the council pipeline (research Step 0 + 5 council steps)

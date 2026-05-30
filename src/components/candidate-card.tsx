@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { IdeaCandidate } from "@/lib/research/types";
@@ -100,6 +101,19 @@ export default function CandidateCard({
         </div>
       ) : null}
 
+      {candidate.report ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <div className="rounded-lg bg-zinc-50 p-2 text-zinc-600 ring-1 ring-inset ring-zinc-200">
+            <div className="font-medium text-zinc-900">Opportunity</div>
+            {candidate.report.scores.find((s) => s.label === "Opportunity")?.score ?? "?"}/10
+          </div>
+          <div className="rounded-lg bg-zinc-50 p-2 text-zinc-600 ring-1 ring-inset ring-zinc-200">
+            <div className="font-medium text-zinc-900">Founder fit</div>
+            {candidate.report.founderFit.score}/10
+          </div>
+        </div>
+      ) : null}
+
       <dl className="mt-3 space-y-1.5 text-xs text-zinc-500">
         {candidate.targetCustomer ? (
           <div><dt className="inline font-medium text-zinc-600">Who pays: </dt><dd className="inline">{candidate.targetCustomer}</dd></div>
@@ -129,7 +143,19 @@ export default function CandidateCard({
         </a>
       ) : null}
 
-      <div className="mt-4 flex items-center gap-3 pt-1">
+      <div className="mt-4 flex flex-wrap items-center gap-2 pt-1">
+        <Link
+          href={`/discover/${discoveryId}/ideas/${candidate.id}`}
+          className="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
+        >
+          View full report
+        </Link>
+        <Link
+          href={`/discover/${discoveryId}/ideas/${candidate.id}#roast`}
+          className="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
+        >
+          Roast
+        </Link>
         <button
           onClick={promote}
           disabled={promoting}
