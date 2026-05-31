@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IdeaClyst — Manuel de terrain</title>
+<link rel="stylesheet" href="fonts.css" />
+<style>
+  :root {
+    --paper: #f3ede1;
+    --paper-2: #ece4d4;
+    --card: #fbf7ee;
+    --ink: #20190f;
+    --ink-soft: #4a4034;
+    --muted: #8a7d6b;
+    --line: #d8cdb8;
+    --line-strong: #c4b69b;
+    --ember: #d6451f;       /* the catalyst spark */
+    --ember-soft: #f0b8a4;
+    --claude: #b8542f;      /* terracotta */
+    --claude-bg: #f6e3d8;
+    --codex: #2f6f5e;       /* pine */
+    --codex-bg: #dcebe3;
+    --gold: #9a7a1e;
+    --shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 18px 40px -24px rgba(40,28,12,.5);
+    --display: "Fraunces", Georgia, serif;
+    --body: "Newsreader", Georgia, serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 2rem; }
+  body {
+    margin: 0;
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(circle at 0% 0%, rgba(214,69,31,.05), transparent 40%),
+      radial-gradient(circle at 100% 10%, rgba(47,111,94,.05), transparent 45%);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* fine grain texture overlay */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    opacity: .035; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  a { color: var(--ember); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+  /* ---------- Layout ---------- */
+  .wrap { display: grid; grid-template-columns: 280px 1fr; max-width: 1280px; margin: 0 auto; }
+
+  /* ---------- Sidebar ---------- */
+  aside {
+    position: sticky; top: 0; align-self: start; height: 100vh;
+    padding: 2.4rem 1.6rem 2rem 2rem; border-right: 1px solid var(--line);
+    overflow-y: auto;
+  }
+  .brand { font-family: var(--display); font-weight: 900; font-size: 1.5rem; letter-spacing: -.02em; line-height: 1; }
+  .brand .clyst { color: var(--ember); }
+  .brand-sub { font-family: var(--mono); font-size: .62rem; letter-spacing: .28em; text-transform: uppercase; color: var(--muted); margin-top: .55rem; }
+  nav.toc { margin-top: 2.2rem; font-size: .9rem; }
+  nav.toc .grp { font-family: var(--mono); font-size: .6rem; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin: 1.6rem 0 .6rem; }
+  nav.toc a {
+    display: block; color: var(--ink-soft); text-decoration: none; padding: .28rem 0 .28rem .9rem;
+    border-left: 2px solid transparent; transition: all .18s ease; line-height: 1.35;
+  }
+  nav.toc a:hover { color: var(--ink); border-left-color: var(--line-strong); }
+  nav.toc a.active { color: var(--ember); border-left-color: var(--ember); font-weight: 500; }
+
+  /* ---------- Main ---------- */
+  main { padding: 0 clamp(1.5rem, 4vw, 4.5rem) 8rem; min-width: 0; }
+
+  /* hero */
+  header.hero { padding: 5.5rem 0 3.5rem; border-bottom: 1px solid var(--line); position: relative; }
+  .eyebrow { font-family: var(--mono); font-size: .68rem; letter-spacing: .3em; text-transform: uppercase; color: var(--ember); display: flex; align-items: center; gap: .8rem; }
+  .eyebrow::after { content: ""; height: 1px; flex: 1; background: linear-gradient(90deg, var(--ember-soft), transparent); }
+  h1.title { font-family: var(--display); font-weight: 900; font-size: clamp(3.4rem, 8vw, 6rem); line-height: .92; letter-spacing: -.035em; margin: 1.4rem 0 0; }
+  h1.title .clyst { color: var(--ember); position: relative; }
+  .lede { font-size: clamp(1.25rem, 2.4vw, 1.7rem); line-height: 1.4; max-width: 38ch; margin-top: 1.6rem; color: var(--ink-soft); font-weight: 400; }
+  .lede em { font-style: italic; color: var(--ink); }
+  .meta-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 2.2rem; }
+  .chip { font-family: var(--mono); font-size: .72rem; letter-spacing: .04em; padding: .42rem .8rem; border: 1px solid var(--line-strong); border-radius: 100px; color: var(--ink-soft); background: var(--card); }
+  .chip b { color: var(--ember); font-weight: 700; }
+
+  /* sections */
+  section { padding-top: 4.5rem; }
+  h2 { font-family: var(--display); font-weight: 600; font-size: clamp(1.9rem, 3.6vw, 2.7rem); letter-spacing: -.02em; line-height: 1.05; margin: 0 0 .4rem; scroll-margin-top: 1.5rem; }
+  h2 .num { font-family: var(--mono); font-size: .85rem; font-weight: 500; color: var(--ember); letter-spacing: .1em; vertical-align: super; margin-right: .7rem; }
+  h3 { font-family: var(--display); font-weight: 600; font-size: 1.4rem; letter-spacing: -.01em; margin: 2.6rem 0 .6rem; }
+  .section-rule { height: 1px; background: var(--line); margin: 1.2rem 0 1.8rem; }
+  p { margin: 0 0 1.1rem; max-width: 68ch; }
+  strong { font-weight: 600; }
+  code:not(pre code) { font-family: var(--mono); font-size: .82em; background: var(--paper-2); border: 1px solid var(--line); border-radius: 5px; padding: .08em .4em; color: var(--ink); }
+
+  /* callout */
+  .note { display: grid; grid-template-columns: auto 1fr; gap: 1rem; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--ember); border-radius: 10px; padding: 1.1rem 1.3rem; margin: 1.6rem 0; box-shadow: var(--shadow); }
+  .note.warn { border-left-color: var(--gold); }
+  .note .ic { font-family: var(--display); font-weight: 900; font-size: 1.3rem; color: var(--ember); line-height: 1; }
+  .note.warn .ic { color: var(--gold); }
+  .note p { margin: 0; font-size: .95rem; max-width: none; }
+  .note p + p { margin-top: .5rem; }
+
+  /* cards grid */
+  .grid { display: grid; gap: 1rem; margin: 1.8rem 0; }
+  .grid.two { grid-template-columns: 1fr 1fr; }
+  .grid.three { grid-template-columns: repeat(3, 1fr); }
+  .feature { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.4rem 1.4rem 1.5rem; box-shadow: var(--shadow); transition: transform .2s ease, box-shadow .2s ease; }
+  .feature:hover { transform: translateY(-3px); box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 26px 50px -28px rgba(40,28,12,.55); }
+  .feature .k { font-family: var(--mono); font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; color: var(--ember); }
+  .feature h4 { font-family: var(--display); font-weight: 600; font-size: 1.15rem; margin: .5rem 0 .5rem; letter-spacing: -.01em; }
+  .feature p { font-size: .93rem; margin: 0; color: var(--ink-soft); }
+
+  /* code block */
+  pre { background: #211a10; color: #ece2cf; border-radius: 12px; padding: 1.3rem 1.4rem; overflow-x: auto; font-family: var(--mono); font-size: .82rem; line-height: 1.7; margin: 1.4rem 0; border: 1px solid #34291a; box-shadow: 0 20px 40px -28px rgba(0,0,0,.6); }
+  pre .c { color: #7f7560; font-style: italic; }
+  pre .t { color: #e0904f; }
+  pre .s { color: #9bbf8a; }
+  pre .v { color: #d9c98a; }
+
+  /* council flow timeline */
+  .flow { margin: 2rem 0 1rem; position: relative; }
+  .flow::before { content: ""; position: absolute; left: 27px; top: 18px; bottom: 18px; width: 2px; background: repeating-linear-gradient(180deg, var(--line-strong) 0 6px, transparent 6px 12px); }
+  .step { display: grid; grid-template-columns: 56px 1fr; gap: 1.2rem; margin-bottom: 1.1rem; position: relative; }
+  .step .dot { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-weight: 900; font-size: 1.4rem; color: #fff; box-shadow: 0 8px 18px -8px rgba(40,28,12,.6); z-index: 1; }
+  .dot.claude { background: var(--claude); }
+  .dot.codex { background: var(--codex); }
+  .dot.go { background: var(--ember); }
+  .step.go .body { border-top: 3px solid var(--ember); }
+  .cmd { display: block; font-family: var(--mono); font-size: .8rem; background: #211a10; color: #ece2cf; border-radius: 8px; padding: .55rem .85rem; margin-top: .7rem; overflow-x: auto; }
+  .cmd::before { content: "$ "; color: #e0904f; }
+  /* language switch */
+  .lang { display: inline-flex; gap: .3rem; margin-top: 1rem; font-family: var(--mono); font-size: .68rem; }
+  .lang a { text-decoration: none; padding: .2rem .6rem; border: 1px solid var(--line-strong); border-radius: 100px; color: var(--ink-soft); letter-spacing: .08em; }
+  .lang a.on { background: var(--ember); border-color: var(--ember); color: #fff; }
+  .step .body { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem 1.3rem; box-shadow: var(--shadow); }
+  .step.claude .body { border-top: 3px solid var(--claude); }
+  .step.codex .body { border-top: 3px solid var(--codex); }
+  .step .who { font-family: var(--mono); font-size: .64rem; letter-spacing: .18em; text-transform: uppercase; display: inline-flex; align-items: center; gap: .5rem; }
+  .step.claude .who { color: var(--claude); }
+  .step.codex .who { color: var(--codex); }
+  .step h4 { font-family: var(--display); font-weight: 600; font-size: 1.25rem; margin: .35rem 0 .5rem; letter-spacing: -.01em; }
+  .step p { font-size: .93rem; margin: 0 0 .7rem; color: var(--ink-soft); }
+  .sees { font-family: var(--mono); font-size: .72rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+  .sees b { color: var(--ink-soft); }
+  .tag { background: var(--paper-2); border: 1px solid var(--line); border-radius: 6px; padding: .12rem .5rem; color: var(--ink-soft); }
+  .tag.claude { background: var(--claude-bg); border-color: var(--claude); color: var(--claude); }
+  .tag.codex { background: var(--codex-bg); border-color: var(--codex); color: var(--codex); }
+  .tag.brief { background: #efe7d4; border-color: var(--line-strong); color: var(--gold); }
+
+  /* legend */
+  .legend { display: flex; gap: 1.6rem; flex-wrap: wrap; font-family: var(--mono); font-size: .76rem; margin: .4rem 0 1.6rem; }
+  .legend span { display: inline-flex; align-items: center; gap: .5rem; color: var(--ink-soft); }
+  .swatch { width: 14px; height: 14px; border-radius: 4px; }
+  .swatch.claude { background: var(--claude); }
+  .swatch.codex { background: var(--codex); }
+
+  /* table */
+  .tbl { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: .9rem; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .tbl th { text-align: left; font-family: var(--mono); font-size: .64rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding: .85rem 1.1rem; background: var(--paper-2); border-bottom: 1px solid var(--line); }
+  .tbl td { padding: .8rem 1.1rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl td code { white-space: nowrap; }
+  .tbl .def { font-family: var(--mono); font-size: .76rem; color: var(--ember); }
+
+  /* file tree */
+  .tree { font-family: var(--mono); font-size: .8rem; line-height: 1.85; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.4rem 1.6rem; box-shadow: var(--shadow); overflow-x: auto; }
+  .tree .d { color: var(--ember); font-weight: 700; }
+  .tree .cmt { color: var(--muted); }
+
+  /* endpoint */
+  .ep { display: flex; align-items: center; gap: .8rem; font-family: var(--mono); font-size: .88rem; margin: 1.4rem 0 .3rem; }
+  .verb { font-weight: 700; padding: .2rem .65rem; border-radius: 6px; font-size: .72rem; letter-spacing: .06em; }
+  .verb.get { background: var(--codex-bg); color: var(--codex); }
+  .verb.post { background: var(--claude-bg); color: var(--claude); }
+
+  footer { margin-top: 6rem; padding-top: 2rem; border-top: 1px solid var(--line); font-family: var(--mono); font-size: .74rem; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+
+  /* mobile */
+  .menu-btn { display: none; }
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: 1fr; }
+    aside { position: fixed; z-index: 50; top: 0; left: 0; width: 280px; background: var(--paper); transform: translateX(-105%); transition: transform .25s ease; box-shadow: 0 0 60px rgba(0,0,0,.2); }
+    aside.open { transform: translateX(0); }
+    .menu-btn { display: grid; place-items: center; position: fixed; z-index: 60; top: 1rem; right: 1rem; width: 46px; height: 46px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--card); font-size: 1.2rem; cursor: pointer; box-shadow: var(--shadow); }
+    .grid.two, .grid.three { grid-template-columns: 1fr; }
+    main { padding-left: 1.3rem; padding-right: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-btn" id="menuBtn" aria-label="Afficher/masquer la navigation">&#9776;</button>
+
+<div class="wrap">
+  <!-- ============ SIDEBAR ============ -->
+  <aside id="sidebar">
+    <div class="brand">Idea<span class="clyst">Clyst</span></div>
+    <div class="brand-sub">Manuel de terrain · v0.1</div>
+    <div class="lang"><a href="HANDBOOK.html">EN</a><a href="HANDBUCH.html">DE</a><a href="HANDBOOK.es.html">ES</a><a href="HANDBOOK.fr.html" class="on">FR</a></div>
+    <div style="margin-top:1rem;display:flex;flex-direction:column;gap:.4rem;font-family:var(--mono);font-size:.66rem;letter-spacing:.06em">
+      <a href="index.html" style="color:var(--ink-soft);text-decoration:none">&#8592; Accueil</a>
+      <a href="https://thorstenmeyerai.com/" target="_blank" rel="noopener" style="color:var(--ember);font-weight:700;text-decoration:none">Propuls&#233; par Thorsten Meyer AI</a>
+    </div>
+    <nav class="toc" id="toc">
+      <div class="grp">Commencer</div>
+      <a href="#walkthrough">Guide pas &#224; pas</a>
+      <div class="grp">Orientation</div>
+      <a href="#overview">Ce que c&#39;est</a>
+      <a href="#features">Fonctionnalit&#233;s en bref</a>
+      <a href="#architecture">Architecture</a>
+      <div class="grp">Le m&#233;canisme</div>
+      <a href="#council">Le conseil en 5 &#233;tapes</a>
+      <a href="#discovery">D&#233;couverte d&#39;id&#233;es</a>
+      <a href="#roadmap">Intelligence de feuille de route</a>
+      <a href="#lifecycle">Cycle de vie d&#39;une requ&#234;te</a>
+      <a href="#modes">Mode simulation vs. CLI</a>
+      <a href="#cli-calls">Fonctionnement des appels CLI</a>
+      <div class="grp">R&#233;f&#233;rence</div>
+      <a href="#data">Mod&#232;le de donn&#233;es &amp; stockage</a>
+      <a href="#api">R&#233;f&#233;rence API</a>
+      <a href="#files">Plan des fichiers</a>
+      <a href="#config">Configuration</a>
+      <div class="grp">Op&#233;rations</div>
+      <a href="#running">Lancer l&#39;application</a>
+      <a href="#limits">Limites &amp; r&#233;solution de probl&#232;mes</a>
+    </nav>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+    <header class="hero">
+      <div class="eyebrow">Instrument de planification pour fondateurs</div>
+      <h1 class="title">Idea<span class="clyst">Clyst</span></h1>
+      <p class="lede">Transformez des id&#233;es brutes en <em>plans SaaS concrets</em> &#8212; en pla&#231;ant Claude et Codex au sein du m&#234;me conseil.</p>
+      <div class="meta-row">
+        <span class="chip">Next.js <b>16</b></span>
+        <span class="chip">React <b>19</b></span>
+        <span class="chip">Local-first</span>
+        <span class="chip">Port <b>5417</b></span>
+        <span class="chip">Sans BDD &middot; Sans auth</span>
+      </div>
+    </header>
+
+    <!-- WALKTHROUGH -->
+    <section id="walkthrough">
+      <h2><span class="num">&#9733;</span>Guide pas &#224; pas</h2>
+      <div class="section-rule"></div>
+      <p>Le chemin le plus rapide depuis un d&#233;p&#244;t fra&#238;chement clon&#233; jusqu&#39;&#224; un dossier de planification complet. Le mode simulation est activ&#233; par d&#233;faut &#8212; <strong>aucun CLI n&#39;est n&#233;cessaire</strong> pour tout tester de bout en bout.</p>
+      <div class="flow">
+        <div class="step go"><div class="dot go">1</div><div class="body">
+          <h4>Installer les d&#233;pendances</h4>
+          <p>Depuis la racine du projet&#160;:</p>
+          <span class="cmd">npm install</span>
+        </div></div>
+        <div class="step go"><div class="dot go">2</div><div class="body">
+          <h4>Cr&#233;er votre configuration</h4>
+          <p>Copiez le fichier d&#39;environnement d&#39;exemple. Il utilise par d&#233;faut le <strong>mode simulation</strong> &#8212; aucun CLI requis.</p>
+          <span class="cmd">cp .env.example .env.local</span>
+        </div></div>
+        <div class="step go"><div class="dot go">3</div><div class="body">
+          <h4>D&#233;marrer le serveur de d&#233;veloppement</h4>
+          <p>Puis ouvrez <a href="http://localhost:5417">http://localhost:5417</a> dans votre navigateur.</p>
+          <span class="cmd">npm run dev</span>
+        </div></div>
+        <div class="step go"><div class="dot go">4</div><div class="body">
+          <h4>D&#233;marrer une session d&#39;id&#233;e</h4>
+          <p>Sur la page d&#39;accueil, cliquez sur <strong>&#171;&#160;D&#233;marrer une session d&#39;id&#233;e&#160;&#187;</strong> pour ouvrir le formulaire d&#39;id&#233;e (<code>/new</code>).</p>
+        </div></div>
+        <div class="step go"><div class="dot go">5</div><div class="body">
+          <h4>D&#233;crire votre id&#233;e</h4>
+          <p>Donnez-lui un <strong>titre</strong>, r&#233;digez l&#39;<strong>id&#233;e</strong> (au moins une phrase, 10+ caract&#232;res), et choisissez un <strong>objectif</strong> &#8212; <code>validate &middot; plan &middot; build &middot; pitch &middot; refine</code>. Ajoutez optionnellement un client cible, des contraintes ou une pile technologique pr&#233;f&#233;r&#233;e. Puis soumettez.</p>
+        </div></div>
+        <div class="step go"><div class="dot go">6</div><div class="body">
+          <h4>Observer le conseil d&#233;lib&#233;rer</h4>
+          <p>Vous atterrissez sur la page de la session, qui actualise toutes les 1,5&#160;s. Les cinq &#233;tapes s&#39;allument au fur et &#224; mesure &#8212; <strong>&#10003;</strong> termin&#233;, <strong>&#9654;</strong> en cours, <strong>&#9675;</strong> en attente &#8212; et chaque r&#233;sultat appara&#238;t d&#232;s qu&#39;il est pr&#234;t.</p>
+        </div></div>
+        <div class="step go"><div class="dot go">7</div><div class="body">
+          <h4>Lire votre dossier</h4>
+          <p>Quand la session est termin&#233;e, les onglets de r&#233;sultats se remplissent&#160;: <strong>R&#233;sum&#233;, Backlog MVP, Risques, Tests de validation, Prochaines invites</strong>. Toutes les sessions pass&#233;es sont accessibles sous <code>/runs</code>.</p>
+        </div></div>
+        <div class="step go"><div class="dot go">8</div><div class="body">
+          <h4>(Optionnel) Passer aux vrais CLIs</h4>
+          <p>Pour obtenir de vrais r&#233;sultats, d&#233;finissez <code>IDEACLYST_AGENT_MODE=cli</code> dans <code>.env.local</code>, assurez-vous que les deux CLIs sont install&#233;s et connect&#233;s, puis red&#233;marrez le serveur et lancez une nouvelle session. Un vrai conseil prend <strong>~5&#8211;7&#160;min</strong> (cinq appels de mod&#232;le en direct), contre instantan&#233; en mode simulation.</p>
+          <span class="cmd">claude --version &amp;&amp; codex login status</span>
+        </div></div>
+        <div class="step go"><div class="dot go">9</div><div class="body">
+          <h4>Retrouver les fichiers</h4>
+          <p>Chaque session est sauvegard&#233;e sur disque sous <code>.ideaclyst/runs/&lt;runId&gt;/</code> en tant que <code>run.json</code> plus des fichiers Markdown lisibles ou partageables hors de l&#39;application.</p>
+        </div></div>
+      </div>
+      <div class="note warn">
+        <div class="ic">!</div>
+        <div><p><strong>Attention en d&#233;veloppement&#160;:</strong> modifier un fichier en cours de session peut interrompre un conseil actif (l&#39;orchestrateur s&#39;ex&#233;cute dans le m&#234;me processus). Si cela se produit, red&#233;marrez <code>npm run dev</code> et commencez une nouvelle session.</p></div>
+      </div>
+    </section>
+
+    <!-- OVERVIEW -->
+    <section id="overview">
+      <h2><span class="num">01</span>Ce que c&#39;est</h2>
+      <div class="section-rule"></div>
+      <p>IdeaClyst est une <strong>application Next.js locale</strong> qui transforme une id&#233;e de produit brute en un <strong>dossier de planification complet pour fondateur</strong>. Il ne s&#39;agit pas d&#39;une simple invite, mais de l&#39;orchestration d&#39;un <strong>conseil</strong> structur&#233; &#8212; une d&#233;lib&#233;ration en cinq &#233;tapes entre deux outils d&#39;IA en ligne de commande qui adoptent des r&#244;les oppos&#233;s et se critiquent mutuellement avant de rendre un verdict.</p>
+      <p>Imaginez une petite salle de conseil&#160;: un <strong style="color:var(--claude)">fondateur SaaS sceptique</strong> (Claude) et un <strong style="color:var(--codex)">CTO pragmatique</strong> (Codex) d&#233;battent de votre id&#233;e jusqu&#39;&#224; la mettre en forme. Le r&#233;sultat est divis&#233; en R&#233;sum&#233;, Backlog MVP, Risques, Tests de validation, et Prochaines invites pr&#234;tes &#224; coller.</p>
+      <div class="note">
+        <div class="ic">&#10022;</div>
+        <div>
+          <p><strong>Toute l&#39;application repose sur une id&#233;e&#160;:</strong> deux mod&#232;les diff&#233;rents, adoptant des r&#244;les adversariaux et lisant les travaux l&#39;un de l&#39;autre, produisent un plan plus pertinent que chacun s&#233;par&#233;ment. Tout le reste &#8212; le stockage sur disque, l&#39;interface de polling, le commutateur de mode &#8212; existe pour servir cette d&#233;lib&#233;ration.</p>
+          <p style="margin-top:.5rem"><strong>Nouveau&#160;:</strong> une <strong>&#201;tape&#160;0</strong> de recherche web (issue de <a href="https://github.com/AllAboutAI-YT/surfagent">surfagent</a>) explore discr&#232;tement le march&#233; et la concurrence pour ancrer chaque &#233;tape du conseil dans des donn&#233;es r&#233;elles &#8212; plus un mode <strong>D&#233;couverte d&#39;id&#233;es</strong> (<code>/discover</code>) qui propose des id&#233;es &#224; promouvoir en session. La recherche produit d&#233;sormais un dossier structur&#233;, une matrice concurrentielle, une carte des opportunit&#233;s, des exp&#233;riences de validation, un plan de distribution, des crit&#232;res d&#39;abandon, des notes sur le p&#233;rim&#232;tre MVP, une critique de page d&#39;accueil, une r&#233;f&#233;rence de veille, et un brief fondateur. Les candidats &#224; la d&#233;couverte b&#233;n&#233;ficient &#233;galement de rapports d&#39;id&#233;es complets avec fiches de notation, &#233;chelles d&#39;offres, signaux de preuve, plans d&#39;ex&#233;cution, ad&#233;quation fondateur, critiques, &#233;tiquettes de source/fra&#238;cheur des mots-cl&#233;s, exports copiables, invites de transfert Claude/Codex, une biblioth&#232;que sauvegard&#233;e, la personnalisation du profil fondateur, un radar de tendances, et une vue de comparaison c&#244;te &#224; c&#244;te. La recherche est au mieux-effort et soumise &#224; un mode (simulation/hors-ligne par d&#233;faut), donc une session n&#39;&#233;choue jamais si Chrome est absent. Voir le README pour les d&#233;tails.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features">
+      <h2><span class="num">02</span>Fonctionnalit&#233;s en bref</h2>
+      <div class="section-rule"></div>
+      <div class="grid three">
+        <div class="feature"><div class="k">C&#339;ur</div><h4>Conseil bi-agent</h4><p>Cinq &#233;tapes altern&#233;es entre Claude et Codex, chaque agent lisant les sorties pr&#233;c&#233;dentes et critiquant l&#39;autre.</p></div>
+        <div class="feature"><div class="k">Pr&#234;t &#224; d&#233;mo</div><h4>Mode simulation par d&#233;faut</h4><p>R&#233;sultats r&#233;alistes et adapt&#233;s &#224; l&#39;id&#233;e, sans aucun CLI install&#233;. Une variable d&#39;environnement suffit pour activer le vrai mode.</p></div>
+        <div class="feature"><div class="k">Temps r&#233;el</div><h4>R&#233;sultats progressifs</h4><p>Le r&#233;sultat de chaque &#233;tape appara&#238;t d&#232;s qu&#39;il est pr&#234;t &#8212; la page de session interroge le disque toutes les 1,5&#160;s.</p></div>
+        <div class="feature"><div class="k">Durable</div><h4>Le disque fait foi</h4><p>Chaque session persiste sous forme de <code>run.json</code> + fichiers Markdown. Un red&#233;marrage du serveur ne perd aucun r&#233;sultat.</p></div>
+        <div class="feature"><div class="k">Structur&#233;</div><h4>Dossier &#224; onglets</h4><p>Le plan final est automatiquement divis&#233; en R&#233;sum&#233;, Backlog MVP, Risques, Tests de validation &amp; Prochaines invites.</p></div>
+        <div class="feature"><div class="k">S&#233;curis&#233;</div><h4>Sans shell, en bac &#224; sable</h4><p>Les CLIs sont lanc&#233;s avec des arguments en tableau + stdin (pas d&#39;injection)&#160;; Codex tourne en lecture seule dans un r&#233;pertoire temporaire jetable.</p></div>
+        <div class="feature"><div class="k">R&#233;silient</div><h4>&#201;chec gracieux</h4><p>Un CLI manquant ou d&#233;faillant marque la session comme &#233;chou&#233;e avec un message clair &#8212; les &#233;tapes d&#233;j&#224; compl&#233;t&#233;es sont pr&#233;serv&#233;es.</p></div>
+        <div class="feature"><div class="k">Portable</div><h4>Artifacts Markdown</h4><p>Chaque session produit &#233;galement des fichiers <code>.md</code> lisibles par l&#39;humain, partageables hors de l&#39;application.</p></div>
+        <div class="feature"><div class="k">Z&#233;ro secret</div><h4>Aucune cl&#233; g&#233;r&#233;e</h4><p>IdeaClyst ne manipule jamais de cl&#233;s API &#8212; les deux CLIs s&#39;authentifient via leurs propres sessions locales.</p></div>
+        <div class="feature"><div class="k">Recherche</div><h4>Kit de preuves</h4><p>La recherche Surfagent produit <code>RESEARCH_DOSSIER.json</code>, un onglet kit, un brief fondateur, et des artifacts de march&#233; autonomes.</p></div>
+        <div class="feature"><div class="k">D&#233;couverte</div><h4>Rapports d&#39;id&#233;es complets</h4><p>Chaque candidat dispose d&#39;une page de rapport avec ad&#233;quation business, &#233;chelle d&#39;offre, pourquoi maintenant, preuves, &#233;cart de march&#233;, cadre, mot-cl&#233;, ad&#233;quation fondateur, et critique.</p></div>
+        <div class="feature"><div class="k">D&#233;cision</div><h4>Comparer et exporter</h4><p>Les rapports de candidats peuvent &#234;tre ajout&#233;s &#224; <code>/compare</code> et copi&#233;s en Markdown, JSON, r&#233;sum&#233; d&#39;une page, ou invites d&#39;impl&#233;mentation et de r&#233;vision Claude/Codex.</p></div>
+        <div class="feature"><div class="k">Personnel</div><h4>Profil fondateur</h4><p><code>/profile</code> stocke localement comp&#233;tences, capacit&#233;, risque, aisance commerciale, capital, acc&#232;s au march&#233;, et avantages concurrentiels.</p></div>
+        <div class="feature"><div class="k">Biblioth&#232;que</div><h4>Mes ressources</h4><p>Sauvegardez des id&#233;es et rapports de candidats dans <code>/library</code>, aliment&#233; par du JSON local et des fichiers Markdown sous <code>.ideaclyst</code>.</p></div>
+        <div class="feature"><div class="k">Tendances</div><h4>Biblioth&#232;que de signaux de march&#233;</h4><p><code>/trends</code>, <code>/insights</code>, et <code>/monitors</code> transforment les d&#233;couvertes locales en cartes de tendances, rapports d&#39;insights de march&#233;, et diffs concurrentiels/tendances r&#233;ex&#233;cutables.</p></div>
+        <div class="feature"><div class="k">Mots-cl&#233;s</div><h4>Intelligence source-aware</h4><p>Les sections de mots-cl&#233;s des rapports indiquent la source et la fra&#238;cheur, avec des donn&#233;es de snapshot optionnelles superpos&#233;es aux estimations hors-ligne d&#233;terministes.</p></div>
+        <div class="feature"><div class="k">Navigation</div><h4>Zones produit &#233;pur&#233;es</h4><p>L&#39;en-t&#234;te reste compact&#160;: Explorer contient D&#233;couvrir, Aujourd&#39;hui, et Tendances&#160;; Espace de travail contient Sessions, Biblioth&#232;que, et Validation. Les outils avanc&#233;s sont li&#233;s depuis ces pages.</p></div>
+        <div class="feature"><div class="k">Preuves</div><h4>Audit des sources</h4><p><code>/evidence</code> indexe les sources de sessions, d&#233;couvertes, et rapports avec confiance, fra&#238;cheur, affirmations, et avertissements de preuves faibles.</p></div>
+        <div class="feature"><div class="k">Validation</div><h4>Espaces de travail sprint</h4><p><code>/validation</code>, <code>/validation/import</code>, <code>/validation/analytics</code>, et <code>/interviews</code> transforment rapports, tests de prix, r&#233;sultats coll&#233;s, et personas acheteurs en une piste d&#39;audit.</p></div>
+        <div class="feature"><div class="k">Construction</div><h4>PRD, landing, et dossiers</h4><p>Les rapports de candidats ouvrent d&#233;sormais des espaces de travail pour entonnoir, page d&#39;accueil, persona, conseiller, version de rapport, paquet d&#39;export, et construction de l&#39;id&#233;e, ancr&#233;s dans le rapport sauvegard&#233;.</p></div>
+        <div class="feature"><div class="k">Op&#233;rations</div><h4>D&#233;cisions et m&#233;moire</h4><p>Les d&#233;cisions de rapport s&#39;&#233;crivent dans <code>.ideaclyst/decisions</code>, alimentent une m&#233;moire de conseil compacte, et gardent inspectables les appels promus, mis en veille, tu&#233;s, et valid&#233;s.</p></div>
+        <div class="feature"><div class="k">Recherche</div><h4>Couloirs de sources et cache</h4><p><code>/settings/research</code> modifie les mod&#232;les de couloirs de sources et affiche le cache &#224; TTL/taille limit&#233;s utilis&#233; par la recherche, la reconnaissance, et l&#39;extraction de pages lisibles.</p></div>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture">
+      <h2><span class="num">03</span>Architecture</h2>
+      <div class="section-rule"></div>
+      <p>IdeaClyst comporte quatre couches, et la discipline de conception est que <em>une seule</em> d&#39;entre elles sait si vous &#234;tes en mode simulation ou en mode CLI r&#233;el.</p>
+      <div class="grid two">
+        <div class="feature"><div class="k">Couche 1 &middot; Interface</div><h4>Pages App Router</h4><p>Accueil, formulaire d&#39;id&#233;e (<code>/new</code>), liste des sessions (<code>/runs</code>), et une page de d&#233;tail de session en direct qui interroge le serveur. Rendu client pur + fetch.</p></div>
+        <div class="feature"><div class="k">Couche 2 &middot; API</div><h4>Gestionnaires de routes</h4><p><code>/api/runs</code> cr&#233;e une session et d&#233;clenche le conseil&#160;; <code>/api/runs/[id]</code> retourne une session pour le polling&#160;; <code>/api/runs/[id]/research</code> met en file d&#39;attente une actualisation de recherche seule et r&#233;pond imm&#233;diatement.</p></div>
+        <div class="feature"><div class="k">Couche 3 &middot; Orchestrateur</div><h4>Le pipeline en 5 &#233;tapes</h4><p><code>orchestrator.ts</code> s&#233;quence le conseil et persiste apr&#232;s chaque &#233;tape, y compris les fichiers structur&#233;s du kit de recherche cr&#233;&#233;s lors de l&#39;&#201;tape&#160;0.</p></div>
+        <div class="feature"><div class="k">Couche 4 &middot; Agents + Stockage</div><h4>Le point de jonction de mode &amp; disque</h4><p><code>agents/</code> est le seul code conscient du mode&#160;; <code>runs/store.ts</code> lit &amp; &#233;crit la source de v&#233;rit&#233; sur disque.</p></div>
+      </div>
+      <pre><span class="c">// la seule branche qui conna&#238;t le mode &#8212; agents/index.ts</span>
+<span class="t">export async function</span> runAgent(agent, prompt, ctx) {
+  <span class="t">if</span> (agentMode() === <span class="s">"mock"</span>)
+    <span class="t">return</span> runMock(ctx.run, ctx.stepKey);   <span class="c">// ignore le prompt, utilise la session structur&#233;e</span>
+  <span class="t">return</span> agent === <span class="s">"claude"</span>
+    ? runClaude(prompt, runDir)            <span class="c">// vrai `claude` (sans -p), dans le r&#233;pertoire de session</span>
+    : runCodex(prompt);                    <span class="c">// vrai `codex exec`</span>
+}</pre>
+    </section>
+
+    <!-- COUNCIL -->
+    <section id="council">
+      <h2><span class="num">04</span>Le conseil en 5 &#233;tapes</h2>
+      <div class="section-rule"></div>
+      <p>C&#39;est le c&#339;ur de l&#39;application. Les deux agents alternent, et le d&#233;tail crucial se trouve dans la ligne <strong>&#171;&#160;voit&#160;&#187;</strong> de chaque &#233;tape &#8212; chaque agent lit des sorties pr&#233;c&#233;dentes sp&#233;cifiques, ce qui en fait une d&#233;lib&#233;ration plut&#244;t que cinq invites isol&#233;es.</p>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--ember)"></i> Surfagent &#8212; recherche web</span>
+        <span><i class="swatch claude"></i> Claude &#8212; fondateur SaaS sceptique</span>
+        <span><i class="swatch codex"></i> Codex &#8212; CTO pragmatique</span>
+      </div>
+
+      <div class="flow">
+        <div class="step">
+          <div class="dot" style="background:var(--ember)">0</div>
+          <div class="body" style="border-top:3px solid var(--ember)">
+            <span class="who" style="color:var(--ember)"><i class="swatch" style="width:10px;height:10px;background:var(--ember)"></i> Surfagent &middot; Recherche web</span>
+            <h4>&#201;tude de march&#233;</h4>
+            <p>Avant que le conseil d&#233;lib&#232;re, Chrome sans interface explore le web pour le march&#233; et les concurrents de l&#39;id&#233;e, et r&#233;dige un m&#233;mo de recherche ainsi qu&#39;un kit structur&#233; qui ancre chaque &#233;tape suivante. Au mieux-effort&#160;: si Chrome est absent ou qu&#39;une recherche est bloqu&#233;e, un repli vers la synth&#232;se hors-ligne est effectu&#233; &#8212; la session n&#39;&#233;choue jamais. Peut &#234;tre d&#233;sactiv&#233; par session depuis le formulaire d&#39;id&#233;e ou mis en file d&#39;attente plus tard comme actualisation en arri&#232;re-plan sans relancer le conseil.</p>
+            <div class="sees"><b>Voit&#160;:</b> <span class="tag brief">brief d&#39;id&#233;e</span> <span class="tag">+ web en direct</span></div>
+          </div>
+        </div>
+
+        <div class="step claude">
+          <div class="dot claude">1</div>
+          <div class="body">
+            <span class="who"><i class="swatch claude" style="width:10px;height:10px"></i> Claude &middot; Strat&#232;ge produit</span>
+            <h4>Strat&#233;gie produit</h4>
+            <p>Teste sous pression l&#39;id&#233;e pour en faire une strat&#233;gie cr&#233;dible&#160;: le probl&#232;me central &amp; qui le ressent le plus, le levier le plus pertinent, le client cible &amp; la disposition &#224; payer, la diff&#233;renciation, l&#39;approche march&#233;, et les hypoth&#232;ses les plus risqu&#233;es.</p>
+            <div class="sees"><b>Voit&#160;:</b> <span class="tag brief">brief d&#39;id&#233;e</span></div>
+          </div>
+        </div>
+
+        <div class="step codex">
+          <div class="dot codex">2</div>
+          <div class="body">
+            <span class="who"><i class="swatch codex" style="width:10px;height:10px"></i> Codex &middot; CTO pragmatique</span>
+            <h4>Architecture technique</h4>
+            <p>Con&#231;oit une architecture MVP l&#233;g&#232;re et r&#233;alisable&#160;: pile recommand&#233;e &amp; justification, mod&#232;le de donn&#233;es, services cl&#233;s, APIs tierces, risques de d&#233;veloppement, et ordre de construction approximatif. Signale tout ce qui est techniquement na&#239;f dans la strat&#233;gie.</p>
+            <div class="sees"><b>Voit&#160;:</b> <span class="tag brief">brief d&#39;id&#233;e</span> <span class="tag claude">+ strat&#233;gie &#201;tape&#160;1</span></div>
+          </div>
+        </div>
+
+        <div class="step claude">
+          <div class="dot claude">3</div>
+          <div class="body">
+            <span class="who"><i class="swatch claude" style="width:10px;height:10px"></i> Claude &middot; Critique</span>
+            <h4>Critique l&#39;architecture</h4>
+            <p>De retour en fondateur sceptique &#8212; attaque le plan du CTO sous l&#39;angle produit/livraison&#160;: est-il sur-con&#231;u pour un MVP&#160;? Sert-il le levier&#160;? Qu&#39;est-ce qui doit &#234;tre coup&#233; pour livrer en semaines, pas en mois&#160;?</p>
+            <div class="sees"><b>Voit&#160;:</b> <span class="tag brief">brief d&#39;id&#233;e</span> <span class="tag codex">+ architecture &#201;tape&#160;2</span></div>
+          </div>
+        </div>
+
+        <div class="step codex">
+          <div class="dot codex">4</div>
+          <div class="body">
+            <span class="who"><i class="swatch codex" style="width:10px;height:10px"></i> Codex &middot; Critique</span>
+            <h4>Critique la strat&#233;gie</h4>
+            <p>Le CTO contre-attaque sur la strat&#233;gie depuis un prisme de r&#233;alit&#233; d&#39;ing&#233;nierie&#160;: quelles hypoth&#232;ses sont techniquement co&#251;teuses ou infaisables pour un MVP&#160;? O&#249; l&#39;approche march&#233; implique-t-elle un p&#233;rim&#232;tre que l&#39;&#233;quipe ne peut pas livrer rapidement&#160;?</p>
+            <div class="sees"><b>Voit&#160;:</b> <span class="tag brief">brief d&#39;id&#233;e</span> <span class="tag claude">+ strat&#233;gie &#201;tape&#160;1</span></div>
+          </div>
+        </div>
+
+        <div class="step claude">
+          <div class="dot claude">5</div>
+          <div class="body">
+            <span class="who"><i class="swatch claude" style="width:10px;height:10px"></i> Claude &middot; Synth&#233;tiseur</span>
+            <h4>Synth&#232;se finale</h4>
+            <p>R&#233;concilie tout en un dossier d&#233;cisif, r&#233;solvant les d&#233;saccords avec une recommandation claire. Produit des en-t&#234;tes <code>##</code> exacts&#160;: R&#233;sum&#233;, Backlog MVP, Risques, Tests de validation, Prochaines invites.</p>
+            <div class="sees"><b>Voit&#160;:</b> <span class="tag brief">brief</span> <span class="tag claude">&#201;1</span> <span class="tag codex">&#201;2</span> <span class="tag claude">&#201;3</span> <span class="tag codex">&#201;4</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <div class="ic">&#8596;</div>
+        <div><p><strong>L&#39;&#233;change crois&#233; est l&#39;essentiel.</strong> Codex s&#39;appuie sur la strat&#233;gie de Claude (&#233;tape&#160;2), puis chacun critique le <em>domaine de l&#39;autre</em> (&#233;tapes&#160;3 &amp; 4), et Claude r&#233;concilie les quatre en un verdict (&#233;tape&#160;5). Apr&#232;s chaque &#233;tape, l&#39;orchestrateur r&#233;&#233;crit <code>run.json</code> et un fichier Markdown, de sorte que l&#39;interface r&#233;v&#232;le les sorties une par une.</p></div>
+      </div>
+    </section>
+
+    <!-- DISCOVERY -->
+    <section id="discovery">
+      <h2><span class="num">&#9670;</span>D&#233;couverte d&#39;id&#233;es</h2>
+      <div class="section-rule"></div>
+      <p>La majeure partie d&#39;IdeaClyst &#233;value une id&#233;e que vous apportez. La <strong>D&#233;couverte d&#39;id&#233;es</strong> (la route <code>/discover</code>) fait l&#39;inverse &#8212; elle <em>trouve</em> des id&#233;es pour vous, ancr&#233;es dans ce avec quoi les gens luttent r&#233;ellement sur le web. La page blanche est la partie la plus difficile de la construction&#160;; la D&#233;couverte la remplace par de v&#233;ritables signaux de demande.</p>
+      <div class="grid two">
+        <div class="feature"><div class="k">1 &middot; Profil</div><h4>Dites qui construit</h4><p>Remplissez optionnellement <code>/profile</code> une fois pour que la d&#233;couverte tienne compte des comp&#233;tences, de l&#39;acc&#232;s aux acheteurs, du capital, du temps, du risque, et de l&#39;aisance commerciale.</p></div>
+        <div class="feature"><div class="k">2 &middot; Brief</div><h4>Vous cadrez la recherche</h4><p>Un march&#233; ou espace &#8212; &#171;&#160;applications visionOS&#160;&#187;, &#171;&#160;IA pour comptables&#160;&#187; &#8212; <strong>plus votre objectif</strong> et votre <strong>capacit&#233; de construction</strong>. Le contexte du profil fondateur est pr&#233;-rempli dans les notes et peut &#234;tre &#233;dit&#233; par scout.</p></div>
+        <div class="feature"><div class="k">3 &middot; Exploration</div><h4>Surfagent balaie le web</h4><p>Chrome sans interface explore des couloirs sp&#233;cifiques &#224; la source &#8212; Hacker News, Reddit, Product Hunt, GitHub, pages commerciales de critiques/prix, et le web g&#233;n&#233;ral &#8212; pour des probl&#232;mes, &#171;&#160;j&#39;aimerais qu&#39;il existe&#160;&#8230;&#160;&#187;, des lancements, et des &#233;cosyst&#232;mes d&#39;impl&#233;mentation.</p></div>
+        <div class="feature"><div class="k">4 &middot; Lecture de march&#233;</div><h4>Un paysage honn&#234;te d&#39;abord</h4><p>Claude r&#233;dige une lecture sourc&#233;e de l&#39;espace &#8212; un verdict d&#39;une ligne, signaux de demande, concurrence, qui paie vraiment, et une perspective r&#233;aliste pour <em>votre</em> objectif. Il commence par les mauvaises nouvelles quand le march&#233; est difficile.</p></div>
+        <div class="feature"><div class="k">5 &middot; Carte des opportunit&#233;s</div><h4>Trouver la zone de levier</h4><p>Le scout cr&#233;e une carte douleur/concurrence &#233;lev&#233;es pour que vous puissiez voir les leviers nets, les id&#233;es encombr&#233;es mais valid&#233;es, les paris exploratoires, et les passages probables avant de choisir un candidat.</p></div>
+        <div class="feature"><div class="k">6 &middot; Concepts class&#233;s</div><h4>Id&#233;es concr&#232;tes et comparables</h4><p>Puis 5&#8211;7 candidats, <strong>class&#233;s par meilleure ad&#233;quation</strong>, chacun avec un levier, qui paie, effort de construction, force commerciale, risque majeur, ad&#233;quation, signal + source, score de confiance, et crit&#232;res d&#39;abandon.</p></div>
+        <div class="feature"><div class="k">7 &middot; Rapport complet</div><h4>Examinez avant de vous engager</h4><p>Chaque candidat s&#39;ouvre sur un rapport complet&#160;: fiche de notation des opportunit&#233;s, ad&#233;quation business, &#233;chelle d&#39;offre, pourquoi maintenant, signaux de preuve, &#233;cart de march&#233;, plan d&#39;ex&#233;cution, ad&#233;quation de cadre, intelligence communautaire et mots-cl&#233;s, ad&#233;quation fondateur, prisme de profil, et critique.</p></div>
+        <div class="feature"><div class="k">8 &middot; Radar de tendances</div><h4>Regarder les signaux s&#39;accumuler</h4><p><code>/trends</code> collecte les termes de march&#233;, notes de croissance des mots-cl&#233;s, communaut&#233;s li&#233;es, sources, et liens de candidats &#224; partir des d&#233;couvertes locales.</p></div>
+        <div class="feature"><div class="k">9 &middot; Sauvegarder/comparer/exporter</div><h4>Faire un choix plus &#233;clair&#233;</h4><p>Sauvegardez des rapports dans <code>/library</code>, ajoutez-les &#224; <code>/compare</code>, triez par scores, et copiez en Markdown, JSON, r&#233;sum&#233;s d&#39;une page, invites de construction, ou invites de r&#233;vision seule.</p></div>
+        <div class="feature"><div class="k">10 &middot; Promouvoir</div><h4>Un clic vers le conseil</h4><p>&#171;&#160;Promouvoir au conseil&#160;&#187; transforme un candidat en session normale et transporte la th&#232;se du rapport, l&#39;ad&#233;quation fondateur, l&#39;offre principale, et le verdict de critique dans le brief du conseil.</p></div>
+      </div>
+      <div class="note">
+        <div class="ic">&#9670;</div>
+        <div><p><strong>Une fonctionnalit&#233; de premier plan.</strong> Comme la recherche, la D&#233;couverte est soumise au mode (candidats hors-ligne d&#233;terministes en simulation&#160;; exploration en direct + synth&#232;se en mode CLI) et au mieux-effort &#8212; elle <em>retourne toujours</em> des candidats, m&#234;me hors-ligne ou quand une source est bloqu&#233;e.</p></div>
+      </div>
+      <p>Les d&#233;couvertes persistent sur disque sous <code>.ideaclyst/discoveries/&lt;id&gt;/</code> (un <code>discovery.json</code>, <code>MARKET_READ.md</code>, <code>OPPORTUNITY_MAP.md</code>, <code>CANDIDATES.md</code>, et des artifacts de rapport/version), et la page de d&#233;couverte actualise en direct, tout comme une session. Le radar de tendances &#233;crit dans <code>.ideaclyst/trends</code>&#160;; insights, moniteurs, d&#233;cisions, exports, couloirs de sources, imports de validation, et entretiens s&#39;&#233;crivent dans leurs propres dossiers locaux sous <code>.ideaclyst/</code>. L&#39;en-t&#234;te de l&#39;application reste &#233;pur&#233;&#160;: <strong>Explorer</strong> ouvre <code>/discover</code>, <code>/today</code>, et <code>/trends</code>&#160;; <strong>Espace de travail</strong> ouvre sessions, biblioth&#232;que, et validation. Comparer, preuves, d&#233;cisions, insights, moniteurs, entretiens, clusters, et param&#232;tres de recherche sont li&#233;s contextuellement depuis ces pages.</p>
+    </section>
+
+    <!-- ROADMAP INTELLIGENCE -->
+    <section id="roadmap">
+      <h2><span class="num">&#9670;</span>Intelligence de feuille de route</h2>
+      <div class="section-rule"></div>
+      <p>IdeaClyst peut lire la feuille de route d&#39;un projet <strong>Threlmark</strong> &#8212; un gestionnaire de feuille de route local-first distinct &#8212; et la transformer en suggestions de croissance ancr&#233;es dans la r&#233;alit&#233;. Pointez-le vers un projet (la route <code>/roadmap</code>) et il propose de nouvelles <strong>fonctionnalit&#233;s</strong>, <strong>produits d&#233;riv&#233;s</strong>, et <strong>services</strong>, chacun not&#233; comme une carte de feuille de route et appuy&#233; par de vraies preuves web. Examinez-les, puis renvoyez les meilleurs dans la Bo&#238;te de r&#233;ception de Threlmark.</p>
+      <div class="grid two">
+        <div class="feature"><div class="k">1 &middot; Source</div><h4>Pointer vers Threlmark</h4><p>Lit la feuille de route de chaque projet directement depuis le disque (<code>~/.threlmark</code>) &#8212; en <strong>lecture seule</strong> &#8212; ou via l&#39;API REST de Threlmark. Configurez-le sur la nouvelle page <code>/settings</code>&#160;; les variables d&#39;environnement ont toujours la priorit&#233;.</p></div>
+        <div class="feature"><div class="k">2 &middot; Carte des lacunes</div><h4>Conna&#238;tre d&#39;abord la feuille de route</h4><p>Une lecture de couverture d&#233;terministe &#8212; quelles cat&#233;gories sont solides, lesquelles sont minces ou totalement absentes, ce qui est fait ou encore ouvert &#8212; cadre l&#39;analyse avant que tout mod&#232;le s&#39;ex&#233;cute.</p></div>
+        <div class="feature"><div class="k">3 &middot; Trois couloirs</div><h4>Fonctionnalit&#233;s &middot; d&#233;riv&#233;s &middot; services</h4><p>Trois couloirs de recherche ind&#233;pendants balaient le web&#160;: lacunes&#8594;fonctionnalit&#233;s, adjacence&#8594;d&#233;riv&#233;s, productisation&#8594;services. Vous choisissez combien de suggestions par couloir.</p></div>
+        <div class="feature"><div class="k">4 &middot; Preuves r&#233;elles</div><h4>Toujours r&#233;el, jamais simul&#233;</h4><p>Mode r&#233;el + strict uniquement. Chaque suggestion cite de vrais liens de sources effectivement r&#233;cup&#233;r&#233;s, plus un pourquoi-maintenant. Pas de sources signifie pas de fabrication &#8212; juste un avis clair.</p></div>
+        <div class="feature"><div class="k">5 &middot; R&#233;vision</div><h4>Score, sources, s&#233;lection</h4><p>La page de r&#233;vision affiche impact/preuves/ad&#233;quation/effort, priorit&#233; calcul&#233;e, le pourquoi-maintenant, et les liens sources par carte. Cochez celles qui valent la peine d&#39;&#234;tre gard&#233;es.</p></div>
+        <div class="feature"><div class="k">6 &middot; Renvoyer</div><h4>Aller-retour vers la Bo&#238;te de r&#233;ception</h4><p>&#171;&#160;Envoyer &#224; Threlmark&#160;&#187; &#233;crit des fichiers de suggestion plats dans le dossier <code>suggestions/</code> du projet&#160;; la Bo&#238;te de r&#233;ception de Threlmark les accepte dans la feuille de route. Choisissez un projet cible diff&#233;rent pour une promotion crois&#233;e.</p></div>
+      </div>
+      <div class="note">
+        <div class="ic">&#9670;</div>
+        <div><p><strong>Lecture seule sauf un dossier.</strong> IdeaClyst n&#39;&#233;crit jamais que dans le r&#233;pertoire <code>suggestions/</code> d&#39;un projet Threlmark &#8212; jamais dans ses &#233;l&#233;ments, tableau, ou m&#233;tadonn&#233;es. Les suggestions portent une provenance (type, pourquoi-maintenant, sources) qui transite intact &#224; travers la Bo&#238;te de r&#233;ception de Threlmark.</p></div>
+      </div>
+      <p>Les analyses persistent sous <code>.ideaclyst/roadmap/&lt;id&gt;/</code> et la page actualise en direct, tout comme une session. La source de donn&#233;es et tout URL de base REST sont d&#233;finis dans <code>/settings</code>&#160;; voir les nouvelles variables dans <a href="#config">Configuration</a>. L&#39;intelligence de feuille de route est soumise au mode comme le reste de la recherche &#8212; elle s&#39;ex&#233;cute en mode r&#233;el + strict et affiche uniquement des donn&#233;es r&#233;elles.</p>
+    </section>
+
+    <!-- LIFECYCLE -->
+    <section id="lifecycle">
+      <h2><span class="num">05</span>Cycle de vie d&#39;une requ&#234;te</h2>
+      <div class="section-rule"></div>
+      <p>Depuis le moment o&#249; vous appuyez sur soumettre, voici le chemin exact &#8212; notez que le serveur r&#233;pond <em>avant</em> que le conseil ait termin&#233;&#160;:</p>
+      <table class="tbl">
+        <tr><th style="width:48px">#</th><th>&#201;tape</th><th>Ce qui se passe</th></tr>
+        <tr><td>1</td><td><b>Soumettre</b></td><td>Le formulaire <code>/new</code> envoie un <code>POST</code> du brief d&#39;id&#233;e vers <code>/api/runs</code>.</td></tr>
+        <tr><td>2</td><td><b>Valider &amp; cr&#233;er</b></td><td>Titre requis, id&#233;e &#8805;&#160;10 caract&#232;res, objectif doit &#234;tre valide. Une session <code>queued</code> est &#233;crite sur disque (<code>run.json</code> + <code>IDEA.md</code>).</td></tr>
+        <tr><td>3</td><td><b>D&#233;clencher &amp; oublier</b></td><td>Le serveur appelle <code>void startRun(id)</code> <strong>sans attendre</strong> et retourne <code>{ runId }</code> avec un 201 imm&#233;diatement.</td></tr>
+        <tr><td>4</td><td><b>Rediriger</b></td><td>Le client navigue vers <code>/runs/[runId]</code>.</td></tr>
+        <tr><td>5</td><td><b>Interroger</b></td><td>La page de session r&#233;cup&#232;re <code>GET /api/runs/[runId]</code> toutes les <strong>1,5&#160;s</strong>, en re-rendant &#224; mesure que les sorties se remplissent.</td></tr>
+        <tr><td>6</td><td><b>D&#233;lib&#233;rer</b></td><td>En arri&#232;re-plan, l&#39;orchestrateur ex&#233;cute les &#233;tapes 1&#8594;5, r&#233;&#233;crivant <code>run.json</code> apr&#232;s chacune.</td></tr>
+        <tr><td>7</td><td><b>Terminer</b></td><td>L&#39;&#233;tape&#160;5 est divis&#233;e en onglets, le statut devient <code>completed</code> (ou <code>failed</code>), et l&#39;interrogation s&#39;arr&#234;te.</td></tr>
+      </table>
+      <pre><span class="c">// api/runs/route.ts &#8212; le transfert d&#233;clencher-et-oublier</span>
+<span class="t">const</span> run = <span class="t">await</span> createRun(input);
+<span class="t">void</span> startRun(run.id);              <span class="c">// PAS attendu &#8212; s&#39;ex&#233;cute en arri&#232;re-plan</span>
+<span class="t">return</span> NextResponse.json({ runId: run.id }, { status: <span class="v">201</span> });</pre>
+    </section>
+
+    <!-- MODES -->
+    <section id="modes">
+      <h2><span class="num">06</span>Mode simulation vs. CLI</h2>
+      <div class="section-rule"></div>
+      <p>Une seule variable d&#39;environnement, <code>IDEACLYST_AGENT_MODE</code>, s&#233;lectionne le backend. L&#39;orchestrateur et l&#39;interface sont identiques dans les deux modes &#8212; seul <code>agents/</code> se comporte diff&#233;remment.</p>
+      <table class="tbl">
+        <tr><th>Aspect</th><th>Simulation <span class="def">(d&#233;faut)</span></th><th>CLI</th></tr>
+        <tr><td><b>Activ&#233; par</b></td><td><code>IDEACLYST_AGENT_MODE=mock</code></td><td><code>IDEACLYST_AGENT_MODE=cli</code></td></tr>
+        <tr><td><b>Besoin de CLIs&#160;?</b></td><td>Non &#8212; s&#39;ex&#233;cute instantan&#233;ment hors-ligne</td><td>Oui &#8212; <code>claude</code> &amp; <code>codex</code> install&#233;s + connect&#233;s</td></tr>
+        <tr><td><b>Pilot&#233; par</b></td><td>Session structur&#233;e + cl&#233; d&#39;&#233;tape (invite ignor&#233;e)</td><td>L&#39;invite g&#233;n&#233;r&#233;e (session/&#233;tape ignor&#233;es)</td></tr>
+        <tr><td><b>Sortie</b></td><td>Markdown d&#233;terministe, adapt&#233; &#224; l&#39;id&#233;e</td><td>Vrai r&#233;sultat du mod&#232;le</td></tr>
+        <tr><td><b>Utiliser pour</b></td><td>D&#233;mos, travail sur l&#39;interface, d&#233;veloppement hors-ligne</td><td>Vrais dossiers de planification</td></tr>
+      </table>
+      <div class="note warn">
+        <div class="ic">!</div>
+        <div><p><strong>Pr&#233;requis du mode CLI.</strong> Les deux binaires doivent &#234;tre dans le PATH et authentifi&#233;s&#160;: <code>claude --version</code> et <code>codex login status</code>. IdeaClyst ne g&#232;re jamais les identifiants &#8212; il s&#39;appuie enti&#232;rement sur la session locale de chaque CLI.</p></div>
+      </div>
+      <div class="note">
+        <div class="ic">&#9201;</div>
+        <div><p><strong>Comptez des minutes, pas des secondes.</strong> Un conseil complet en mode CLI repr&#233;sente cinq vrais appels de mod&#232;le &#8212; environ 50&#8211;80&#160;s par &#233;tape, ~5&#8211;7&#160;min de bout en bout. Le mode simulation se termine instantan&#233;ment. Les variables d&#39;environnement sont lues au d&#233;marrage du serveur, donc <strong>red&#233;marrez le serveur de d&#233;veloppement</strong> apr&#232;s avoir chang&#233; le mode, et notez que changer de mode <strong>ne recalcule pas les sessions existantes</strong> &#8212; commencez une nouvelle session.</p></div>
+      </div>
+      <div class="note">
+        <div class="ic">&#10003;</div>
+        <div><p><strong>Une session a-t-elle vraiment utilis&#233; les vrais CLIs&#160;?</strong> Ouvrez son <code>PRODUCT_STRATEGY.md</code> &#8212; une vraie sortie est sp&#233;cifique &#224; votre id&#233;e et r&#233;f&#233;rence votre pile / contraintes pr&#233;f&#233;r&#233;es, tandis qu&#39;une sortie en simulation r&#233;utilise un mod&#232;le fixe (elle ins&#232;re votre texte d&#39;id&#233;e dans des formulations g&#233;n&#233;riques comme &#171;&#160;&#8230;pointe vers un flux de travail actuellement manuel, fragment&#233;, ou simplement tol&#233;r&#233;&#160;&#187;).</p></div>
+      </div>
+    </section>
+
+    <!-- CLI CALLS -->
+    <section id="cli-calls">
+      <h2><span class="num">07</span>Fonctionnement des appels CLI</h2>
+      <div class="section-rule"></div>
+      <p>En mode CLI, chaque &#233;tape du conseil lance un vrai processus. Les deux backends utilisent des <strong>arguments en tableau + stdin</strong> (jamais une cha&#238;ne shell), donc une invite ne peut pas casser l&#39;&#233;chappement ou injecter de la syntaxe shell, et tous deux appliquent un d&#233;lai d&#39;attente par appel (d&#233;faut 180&#160;s).</p>
+
+      <h3 style="color:var(--claude)">Backend Claude</h3>
+      <p><strong>Sans <code>-p</code> / <code>--print</code>.</strong> Quand la sortie standard de <code>claude</code> n&#39;est pas un TTY (ici c&#39;est un pipe), le CLI s&#39;ex&#233;cute de mani&#232;re non-interactive et affiche une r&#233;ponse unique, puis se termine. Donc IdeaClyst envoie simplement l&#39;invite sur stdin et lit stdout &#8212; aucun drapeau d&#39;impression n&#233;cessaire. <code>--tools ""</code> en fait une compl&#233;tion de texte pure (sans actions de fichiers agentiques), et il s&#39;ex&#233;cute dans le <strong>r&#233;pertoire de session propre de l&#39;id&#233;e</strong> (spawn <code>cwd</code>)&#160;:</p>
+      <pre><span class="c">// agents/claude.ts &#8212; s&#39;ex&#233;cute dans le r&#233;pertoire propre de la session</span>
+claude --tools ""                  <span class="c">// invite sur stdin, stdout pip&#233; (non-TTY)</span>
+       [--model <span class="v">&lt;model&gt;</span>]            <span class="c">// optionnel IDEACLYST_CLAUDE_MODEL</span></pre>
+      <p>Retourne la sortie standard nettoy&#233;e. Un binaire manquant (<code>ENOENT</code>), une sortie non-nulle sans sortie, ou une sortie vide rejettent chacun avec un message clair &#171;&#160;revenir au mode simulation&#160;&#187;.</p>
+      <div class="note">
+        <div class="ic">&#10022;</div>
+        <div><p><strong>Pourquoi pas de <code>-p</code>&#160;?</strong> Le comportement non-interactif propre du CLI est d&#233;clench&#233; par un stdout non-TTY, pas uniquement par le drapeau d&#39;impression &#8212; donc supprimer <code>-p</code> (et le <code>--output-format</code> propre &#224; <code>-p</code>) donne quand m&#234;me une compl&#233;tion en un seul coup. Chaque id&#233;e s&#39;ex&#233;cute dans son propre r&#233;pertoire, reproduisant l&#39;isolation de Codex.</p></div>
+      </div>
+
+      <h3 style="color:var(--codex)">Backend Codex</h3>
+      <p>Ex&#233;cute Codex de mani&#232;re non-interactive, en <strong>lecture seule</strong>, dans un r&#233;pertoire de travail temporaire jetable pour qu&#39;il ne puisse pas toucher votre syst&#232;me de fichiers &#8212; nous voulons uniquement la compl&#233;tion de texte&#160;:</p>
+      <pre><span class="c">// agents/codex.ts</span>
+codex exec --json --skip-git-repo-check --ephemeral \
+  -s read-only --color never \
+  -C <span class="v">&lt;temp-dir&gt;</span> -o <span class="v">last-message.txt</span> -    <span class="c">// invite sur stdin</span></pre>
+      <p>Le message final propre est lu depuis le fichier de sortie <code>-o</code>&#160;; le flux d&#39;&#233;v&#233;nements <code>--json</code> est analys&#233; comme solution de repli (et pour faire remonter une erreur d&#39;API propre). Le r&#233;pertoire temporaire est toujours supprim&#233; ensuite. Un <code>IDEACLYST_CODEX_MODEL</code> optionnel ajoute <code>-m &lt;model&gt;</code>, sinon il s&#39;en remet &#224; <code>~/.codex/config.toml</code>.</p>
+    </section>
+
+    <!-- DATA -->
+    <section id="data">
+      <h2><span class="num">08</span>Mod&#232;le de donn&#233;es &amp; stockage</h2>
+      <div class="section-rule"></div>
+      <p>IdeaClyst est local-first&#160;: <strong>il n&#39;y a ni base de donn&#233;es ni &#233;tat en m&#233;moire</strong>. Chaque session est un r&#233;pertoire, et <code>run.json</code> est l&#39;unique source de v&#233;rit&#233; &#8212; l&#39;orchestrateur le r&#233;&#233;crit apr&#232;s chaque &#233;tape, l&#39;API de polling le relit simplement.</p>
+      <h3>Structure sur disque</h3>
+      <div class="tree">
+<span class="d">.ideaclyst/</span>                          <span class="cmt"># IDEACLYST_DATA_DIR (d&#233;faut)</span>
+&#9500;&#9472; <span class="d">runs/</span>
+   &#9492;&#9472; <span class="d">&lt;runId&gt;/</span>                     <span class="cmt"># slug pr&#233;fix&#233; par horodatage</span>
+      &#9500;&#9472; run.json                  <span class="cmt"># &#8592; source unique de v&#233;rit&#233;</span>
+      &#9500;&#9472; IDEA.md                   <span class="cmt"># le brief, lisible par l&#39;humain</span>
+      &#9500;&#9472; RESEARCH_FINDINGS.md      <span class="cmt"># &#233;tape 0 (recherche web)</span>
+      &#9500;&#9472; RESEARCH_DOSSIER.json     <span class="cmt"># preuves structur&#233;es</span>
+      &#9500;&#9472; RESEARCH_TOOLKIT.md       <span class="cmt"># tous les outils de recherche</span>
+      &#9500;&#9472; COMPETITOR_MATRIX.md      <span class="cmt"># comparaison concurrentielle</span>
+      &#9500;&#9472; OPPORTUNITY_MAP.md        <span class="cmt"># zones d&#39;opportunit&#233;s</span>
+      &#9500;&#9472; VALIDATION_EXPERIMENTS.md <span class="cmt"># tests ancr&#233;s dans les sources</span>
+      &#9500;&#9472; DISTRIBUTION_PLAN.md      <span class="cmt"># premiers canaux</span>
+      &#9500;&#9472; IDEA_GRAVEYARD.md         <span class="cmt"># crit&#232;res d&#39;abandon</span>
+      &#9500;&#9472; MVP_SCOPE_NEGOTIATION.md  <span class="cmt"># d&#233;cisions de p&#233;rim&#232;tre</span>
+      &#9500;&#9472; LANDING_PAGE_CRITIC.md    <span class="cmt"># critique de page concurrente</span>
+      &#9500;&#9472; COMPETITOR_WATCH.md       <span class="cmt"># r&#233;f&#233;rence de veille locale</span>
+      &#9500;&#9472; FOUNDER_BRIEF.md          <span class="cmt"># brief fondateur concis</span>
+      &#9500;&#9472; PRODUCT_STRATEGY.md       <span class="cmt"># &#233;tape 1</span>
+      &#9500;&#9472; TECHNICAL_ARCHITECTURE.md <span class="cmt"># &#233;tape 2</span>
+      &#9500;&#9472; CRITIQUES.md              <span class="cmt"># &#233;tapes 3 + 4 combin&#233;es</span>
+      &#9500;&#9472; FINAL_PLAN.md             <span class="cmt"># &#233;tape 5</span>
+	      &#9492;&#9472; TRANSCRIPT.md             <span class="cmt"># journal de tous les &#233;changes</span>
+&#9492;&#9472; <span class="d">discoveries/</span>
+   &#9492;&#9472; <span class="d">&lt;discoveryId&gt;/</span>
+      &#9500;&#9472; discovery.json               <span class="cmt"># lecture de march&#233;, candidats, rapports</span>
+      &#9500;&#9472; MARKET_READ.md               <span class="cmt"># paysage de march&#233;</span>
+      &#9500;&#9472; OPPORTUNITY_MAP.md           <span class="cmt"># zones de levier</span>
+      &#9500;&#9472; CANDIDATES.md                <span class="cmt"># id&#233;es class&#233;es</span>
+      &#9492;&#9472; CANDIDATE_REPORTS.md         <span class="cmt"># rapports d&#39;id&#233;es complets</span>
+      </div>
+      <h3>L&#39;enregistrement de session</h3>
+      <p>Une session contient le brief (titre, id&#233;e, objectif, client cible optionnel / contraintes / pile pr&#233;f&#233;r&#233;e), un <code>status</code> de <code>queued &#8594; running &#8594; completed | failed</code>, une &#233;tiquette <code>currentStep</code> lisible par l&#39;humain pour l&#39;interface, et un objet <code>outputs</code> qui commence vide et se remplit. Les identifiants de session sont des slugs pr&#233;fix&#233;s par horodatage, de sorte qu&#39;un tri invers&#233; de cha&#238;nes donne le plus r&#233;cent en premier gratuitement.</p>
+      <table class="tbl">
+        <tr><th>Statut</th><th>Signification</th></tr>
+        <tr><td><code>queued</code></td><td>Cr&#233;&#233;, conseil pas encore d&#233;marr&#233;.</td></tr>
+        <tr><td><code>running</code></td><td>Conseil en cours&#160;; <code>currentStep</code> indique o&#249;.</td></tr>
+        <tr><td><code>completed</code></td><td>Les 5 &#233;tapes sont termin&#233;es&#160;; onglets remplis.</td></tr>
+        <tr><td><code>failed</code></td><td>Une &#233;tape a &#233;chou&#233;&#160;; <code>error</code> contient le message, les &#233;tapes pr&#233;c&#233;dentes sont pr&#233;serv&#233;es.</td></tr>
+      </table>
+      <div class="note">
+        <div class="ic">&#9988;</div>
+        <div><p><strong>Division de sections tol&#233;rante.</strong> L&#39;&#233;tape&#160;5 demande des en-t&#234;tes <code>##</code> exacts, mais <code>markdown.ts</code> les fait correspondre sans distinction de casse par mot-cl&#233; (ex. &#171;&#160;mvp&#160;&#187; / &#171;&#160;backlog&#160;&#187; / &#171;&#160;scope&#160;&#187;) et tol&#232;re <code>###</code>. Si une section ne peut pas &#234;tre trouv&#233;e, le plan complet revient dans l&#39;onglet R&#233;sum&#233; &#8212; un onglet n&#39;est donc jamais vide.</p></div>
+      </div>
+    </section>
+
+    <!-- API -->
+    <section id="api">
+      <h2><span class="num">09</span>R&#233;f&#233;rence API</h2>
+      <div class="section-rule"></div>
+
+      <div class="ep"><span class="verb get">GET</span> <code>/api/runs</code></div>
+      <p>Liste toutes les sessions, les plus r&#233;centes en premier. Retourne <code>{ runs: Run[] }</code>.</p>
+
+      <div class="ep"><span class="verb post">POST</span> <code>/api/runs</code></div>
+      <p>Valide le brief, cr&#233;e une session en file d&#39;attente, d&#233;clenche le conseil en arri&#232;re-plan, et retourne <code>{ runId }</code> (201). Validation&#160;: titre requis&#160;; id&#233;e &#8805;&#160;10 caract&#232;res&#160;; objectif &#8712; <code>validate &middot; plan &middot; build &middot; pitch &middot; refine</code>.</p>
+      <pre><span class="c">// corps de la requ&#234;te</span>
+{
+  <span class="v">"title"</span>: <span class="s">"..."</span>,            <span class="c">// requis</span>
+  <span class="v">"idea"</span>: <span class="s">"..."</span>,             <span class="c">// requis, 10+ caract&#232;res</span>
+  <span class="v">"goal"</span>: <span class="s">"validate"</span>,        <span class="c">// requis, l&#39;un des cinq</span>
+  <span class="v">"targetCustomer"</span>: <span class="s">"..."</span>,   <span class="c">// optionnel</span>
+  <span class="v">"constraints"</span>: <span class="s">"..."</span>,      <span class="c">// optionnel</span>
+  <span class="v">"preferredStack"</span>: <span class="s">"..."</span>    <span class="c">// optionnel</span>
+}</pre>
+
+      <div class="ep"><span class="verb get">GET</span> <code>/api/runs/[runId]</code></div>
+      <p>Retourne une session unique sous forme de <code>{ run: Run }</code> &#8212; c&#39;est ce que la page de d&#233;tail interroge toutes les 1,5&#160;s.</p>
+
+      <h3>Piloter une session depuis le terminal</h3>
+      <p>L&#39;interface n&#39;est qu&#39;un client de cette API &#8212; tout ce que vous pouvez faire dans le navigateur, vous pouvez le faire depuis un script. Cr&#233;ez une session, interrogez-la jusqu&#39;&#224; ce qu&#39;elle se termine, puis lisez le dossier sur disque&#160;:</p>
+      <pre><span class="c"># 1. Cr&#233;er une session &#8594; retourne { "runId": "..." }</span>
+curl -s -X POST http://localhost:5417/api/runs \
+  -H <span class="s">'Content-Type: application/json'</span> \
+  -d <span class="s">'{"title":"StandupScribe","idea":"A Slack bot that posts a daily standup digest.","goal":"plan"}'</span>
+
+<span class="c"># 2. Interroger le statut jusqu&#39;&#224; compl&#233;tion (toutes les quelques secondes)</span>
+curl -s http://localhost:5417/api/runs/<span class="v">&lt;runId&gt;</span> | jq <span class="s">'.run.status, .run.currentStep'</span>
+
+<span class="c"># 3. Lire le dossier termin&#233;</span>
+cat .ideaclyst/runs/<span class="v">&lt;runId&gt;</span>/FINAL_PLAN.md</pre>
+    </section>
+
+    <!-- FILES -->
+    <section id="files">
+      <h2><span class="num">10</span>Plan des fichiers</h2>
+      <div class="section-rule"></div>
+      <div class="tree">
+<span class="d">src/</span>
+&#9500;&#9472; <span class="d">app/</span>
+&#9474;  &#9500;&#9472; page.tsx                    <span class="cmt"># page d&#39;accueil</span>
+&#9474;  &#9500;&#9472; new/page.tsx               <span class="cmt"># formulaire d&#39;id&#233;e</span>
+&#9474;  &#9500;&#9472; runs/page.tsx              <span class="cmt"># liste des sessions</span>
+&#9474;  &#9500;&#9472; runs/[runId]/page.tsx      <span class="cmt"># d&#233;tail de session en direct (interroge)</span>
+&#9474;  &#9492;&#9472; <span class="d">api/runs/</span>
+&#9474;     &#9500;&#9472; route.ts                <span class="cmt"># GET liste / POST cr&#233;er + d&#233;clencher</span>
+&#9474;     &#9492;&#9472; [runId]/route.ts        <span class="cmt"># GET une session</span>
+&#9500;&#9472; <span class="d">components/</span>                   <span class="cmt"># app-shell, idea-form, result-tabs,</span>
+&#9474;                                <span class="cmt">#   run-card, status-pill, empty-state</span>
+&#9492;&#9472; <span class="d">lib/</span>
+   &#9500;&#9472; <span class="d">agents/</span>                    <span class="cmt"># LE point de jonction de mode</span>
+   &#9474;  &#9500;&#9472; index.ts                <span class="cmt"># dispatch runAgent()</span>
+   &#9474;  &#9500;&#9472; mock.ts                 <span class="cmt"># sortie hors-ligne adapt&#233;e &#224; l&#39;id&#233;e</span>
+   &#9474;  &#9500;&#9472; claude.ts               <span class="cmt"># vrai `claude` (sans -p), r&#233;pertoire par session</span>
+   &#9474;  &#9500;&#9472; codex.ts                <span class="cmt"># vrai `codex exec`</span>
+   &#9474;  &#9492;&#9472; prompts.ts              <span class="cmt"># les 5 constructeurs d&#39;invites</span>
+   &#9500;&#9472; <span class="d">runs/</span>
+   &#9474;  &#9500;&#9472; types.ts                <span class="cmt"># mod&#232;le de donn&#233;es Run / RunOutputs</span>
+   &#9474;  &#9500;&#9472; store.ts                <span class="cmt"># lecture/&#233;criture sur disque</span>
+   &#9474;  &#9492;&#9472; markdown.ts             <span class="cmt"># diviseur de sections du plan final</span>
+   &#9500;&#9472; orchestrator.ts            <span class="cmt"># le pipeline en 5 &#233;tapes</span>
+   &#9492;&#9472; utils.ts                   <span class="cmt"># slug/runId + rendu Markdown</span>
+      </div>
+    </section>
+
+    <!-- CONFIG -->
+    <section id="config">
+      <h2><span class="num">11</span>Configuration</h2>
+      <div class="section-rule"></div>
+      <p>Toute la configuration se trouve dans <code>.env.local</code> (copi&#233; depuis <code>.env.example</code>). Aucun secret n&#39;est requis.</p>
+      <table class="tbl">
+        <tr><th>Variable</th><th>D&#233;faut</th><th>R&#244;le</th></tr>
+        <tr><td><code>IDEACLYST_AGENT_MODE</code></td><td><code>mock</code></td><td><code>mock</code> ou <code>cli</code></td></tr>
+        <tr><td><code>IDEACLYST_CLAUDE_BIN</code></td><td><code>claude</code></td><td>Binaire / chemin du CLI Claude</td></tr>
+        <tr><td><code>IDEACLYST_CLAUDE_MODEL</code></td><td><span class="def">vide</span></td><td>Mod&#232;le Claude concret (ex. <code>opus</code>), ou laisser au d&#233;faut du CLI</td></tr>
+        <tr><td><code>IDEACLYST_CODEX_BIN</code></td><td><code>codex</code></td><td>Binaire / chemin du CLI Codex</td></tr>
+        <tr><td><code>IDEACLYST_CODEX_MODEL</code></td><td><span class="def">vide</span></td><td>Mod&#232;le Codex concret, ou laisser &#224; <code>~/.codex/config.toml</code></td></tr>
+        <tr><td><code>IDEACLYST_AGENT_TIMEOUT_MS</code></td><td><code>180000</code></td><td>D&#233;lai d&#39;attente par appel d&#39;agent</td></tr>
+        <tr><td><code>IDEACLYST_DATA_DIR</code></td><td><code>.ideaclyst</code></td><td>Emplacement de stockage des sessions</td></tr>
+      </table>
+      <h3>Recherche &amp; d&#233;couverte</h3>
+      <p>Tout au mieux-effort&#160;; le chemin r&#233;el n&#233;cessite une installation Chrome/Chromium. La recherche suit le mode agent sauf si elle est surcharg&#233;e.</p>
+      <table class="tbl">
+        <tr><th>Variable</th><th>D&#233;faut</th><th>R&#244;le</th></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_MODE</code></td><td><span class="def">suit le mode agent</span></td><td>Surcharge <code>mock</code> ou <code>live</code></td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_STRICT</code></td><td><span class="def">d&#233;sactiv&#233;</span></td><td><code>1</code> = ne jamais afficher de contenu simul&#233;/hors-ligne&#160;; afficher un avis clair si les donn&#233;es r&#233;elles sont indisponibles (&#224; associer &#224; <code>live</code>)</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_ENGINE</code></td><td><code>duckduckgo</code></td><td><code>duckduckgo</code> &middot; <code>bing</code> &middot; <code>google</code></td></tr>
+        <tr><td><code>IDEACLYST_CHROME_BIN</code></td><td><span class="def">auto-d&#233;tect&#233;</span></td><td>Surcharge du chemin Chrome/Chromium</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_USER_AGENT</code></td><td><span class="def">UA Chrome bureau</span></td><td>Surcharge UA (&#233;vite les d&#233;fis bot headless)</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_CDP_PORT</code></td><td><code>9222</code></td><td>Port de d&#233;bogage Chrome sans interface</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_TIMEOUT_MS</code></td><td><code>20000</code></td><td>D&#233;lai de reconnaissance par page</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_BUDGET_MS</code></td><td><code>60000</code></td><td>Budget total de recherche / &#233;tape scout</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_MAX_RESULTS</code></td><td><code>6</code></td><td>R&#233;sultats de recherche analys&#233;s par requ&#234;te</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_MAX_SOURCES</code></td><td><code>3</code></td><td>Pages en reconnaissance approfondie</td></tr>
+        <tr><td><code>IDEACLYST_RESEARCH_IDLE_MS</code></td><td><code>120000</code></td><td>Fermer Chrome sans interface inactif apr&#232;s</td></tr>
+      </table>
+      <h3>Intelligence de feuille de route (Threlmark)</h3>
+      <p>Indique &#224; IdeaClyst d&#39;o&#249; lire les projets Threlmark. La page <code>/settings</code> les modifie &#233;galement&#160;; les variables d&#39;environnement ont la priorit&#233;.</p>
+      <table class="tbl">
+        <tr><th>Variable</th><th>D&#233;faut</th><th>R&#244;le</th></tr>
+        <tr><td><code>IDEACLYST_ROADMAP_SOURCE</code></td><td><span class="def">param&#232;tres / disque</span></td><td><code>disk</code> ou <code>rest</code></td></tr>
+        <tr><td><code>THRELMARK_DATA_DIR</code></td><td><code>~/.threlmark</code></td><td>Racine des donn&#233;es Threlmark (source disque)</td></tr>
+        <tr><td><code>IDEACLYST_ROADMAP_DIR</code></td><td><span class="def">= THRELMARK_DATA_DIR</span></td><td>Surcharge de chemin explicite</td></tr>
+        <tr><td><code>IDEACLYST_THRELMARK_API</code></td><td><span class="def">aucun</span></td><td>URL de base pour la source REST (ex. <code>http://localhost:5418</code>)</td></tr>
+      </table>
+    </section>
+
+    <!-- RUNNING -->
+    <section id="running">
+      <h2><span class="num">12</span>Lancer l&#39;application</h2>
+      <div class="section-rule"></div>
+      <pre><span class="c"># d&#233;marrage rapide &#8212; mode simulation, aucun CLI requis</span>
+npm install
+cp .env.example .env.local
+npm run dev          <span class="c"># &#8594; http://localhost:5417</span>
+
+<span class="c"># ensuite&#160;: ouvrir l&#39;app &#8594; &#171;&#160;D&#233;marrer une session d&#39;id&#233;e&#160;&#187; &#8594; soumettre &#8594; observer l&#39;assemblage</span></pre>
+      <table class="tbl">
+        <tr><th>Script</th><th>Action</th></tr>
+        <tr><td><code>npm run dev</code></td><td>Serveur de d&#233;veloppement sur&#160;:5417 (Turbopack)</td></tr>
+        <tr><td><code>npm run build</code></td><td>Build de production</td></tr>
+        <tr><td><code>npm run start</code></td><td>Servir le build de production sur&#160;:5417</td></tr>
+        <tr><td><code>npm run lint</code></td><td>ESLint</td></tr>
+        <tr><td><code>npm run typecheck</code></td><td><code>tsc --noEmit</code></td></tr>
+      </table>
+    </section>
+
+    <!-- LIMITS -->
+    <section id="limits">
+      <h2><span class="num">13</span>Limites &amp; r&#233;solution de probl&#232;mes</h2>
+      <div class="section-rule"></div>
+      <div class="note warn">
+        <div class="ic">!</div>
+        <div><p><strong>Le rechargement &#224; chaud interrompt les sessions en cours.</strong> L&#39;orchestrateur s&#39;ex&#233;cute dans le m&#234;me processus. En d&#233;veloppement, modifier un fichier en cours de session peut tuer un conseil actif. Red&#233;marrez <code>dev</code> et commencez une nouvelle session. Les &#233;tapes d&#233;j&#224; termin&#233;es sur disque sont conserv&#233;es.</p></div>
+      </div>
+      <div class="note warn">
+        <div class="ic">!</div>
+        <div><p><strong>&#171;&#160;La session du conseil a &#233;chou&#233;&#160;&#187; en mode CLI.</strong> Presque toujours un CLI non install&#233; ou non connect&#233;. V&#233;rifiez <code>claude --version</code> et <code>codex login status</code>, ou d&#233;finissez <code>IDEACLYST_AGENT_MODE=mock</code> pour revenir aux sorties simul&#233;es.</p></div>
+      </div>
+      <div class="note warn">
+        <div class="ic">!</div>
+        <div><p><strong>P&#233;rim&#232;tre v0.</strong> Pas d&#39;authentification, facturation, &#233;quipes, base de donn&#233;es, ou Docker. Les sessions sont des fichiers locaux. C&#39;est intentionnel &#8212; IdeaClyst est un instrument de planification local-first, pas un produit h&#233;berg&#233;.</p></div>
+      </div>
+    </section>
+
+    <footer>
+      <span>IdeaClyst &middot; Manuel de terrain &middot; v0.1 &middot; <a href="https://github.com/MeyerThorsten/ideaclyst">Licence MIT</a></span>
+      <span><a href="https://ideaclyst.com">ideaclyst.com</a> &middot; Propuls&#233; par <a href="https://thorstenmeyerai.com/" target="_blank" rel="noopener">Thorsten Meyer AI</a></span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  // mobile nav toggle
+  const btn = document.getElementById('menuBtn');
+  const sidebar = document.getElementById('sidebar');
+  btn.addEventListener('click', () => sidebar.classList.toggle('open'));
+  sidebar.addEventListener('click', e => { if (e.target.tagName === 'A') sidebar.classList.remove('open'); });
+
+  // scroll-spy: highlight active TOC link
+  const links = [...document.querySelectorAll('#toc a')];
+  const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const a = map.get(e.target.id);
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -75% 0px', threshold: 0 });
+  document.querySelectorAll('main section[id]').forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

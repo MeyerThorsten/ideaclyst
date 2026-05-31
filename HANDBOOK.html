@@ -202,7 +202,7 @@
   <aside id="sidebar">
     <div class="brand">Idea<span class="clyst">Clyst</span></div>
     <div class="brand-sub">Field Manual · v0.1</div>
-    <div class="lang"><a href="HANDBOOK.html" class="on">EN</a><a href="HANDBUCH.html">DE</a></div>
+    <div class="lang"><a href="HANDBOOK.html" class="on">EN</a><a href="HANDBUCH.html">DE</a><a href="HANDBOOK.es.html">ES</a><a href="HANDBOOK.fr.html">FR</a></div>
     <div style="margin-top:1rem;display:flex;flex-direction:column;gap:.4rem;font-family:var(--mono);font-size:.66rem;letter-spacing:.06em">
       <a href="index.html" style="color:var(--ink-soft);text-decoration:none">← Home</a>
       <a href="https://thorstenmeyerai.com/" target="_blank" rel="noopener" style="color:var(--ember);font-weight:700;text-decoration:none">Powered by Thorsten Meyer AI</a>
@@ -217,6 +217,7 @@
       <div class="grp">The Mechanism</div>
       <a href="#council">The 5-step council</a>
       <a href="#discovery">Idea Discovery</a>
+      <a href="#roadmap">Roadmap Intelligence</a>
       <a href="#lifecycle">Request lifecycle</a>
       <a href="#modes">Mock vs. CLI mode</a>
       <a href="#cli-calls">How CLI calls work</a>
@@ -468,6 +469,26 @@
       <p>Discoveries persist on disk under <code>.ideaclyst/discoveries/&lt;id&gt;/</code> (a <code>discovery.json</code>, <code>MARKET_READ.md</code>, <code>OPPORTUNITY_MAP.md</code>, <code>CANDIDATES.md</code>, and report/version artifacts), and the discovery page polls live, just like a run. Trend radar writes <code>.ideaclyst/trends</code>; insights, monitors, decisions, exports, source lanes, validation imports, and interviews write to their own local folders under <code>.ideaclyst/</code>. The app header stays lean: <strong>Explore</strong> opens <code>/discover</code>, <code>/today</code>, and <code>/trends</code>; <strong>Workspace</strong> opens sessions, library, and validation. Compare, evidence, decisions, insights, monitors, interviews, clusters, and research settings are linked contextually from those pages.</p>
     </section>
 
+    <!-- ROADMAP INTELLIGENCE -->
+    <section id="roadmap">
+      <h2><span class="num">◆</span>Roadmap Intelligence</h2>
+      <div class="section-rule"></div>
+      <p>IdeaClyst can read the roadmap of a <strong>Threlmark</strong> project — a separate local-first roadmap manager — and turn it into grounded growth suggestions. Point it at a project (the <code>/roadmap</code> route) and it proposes new <strong>features</strong>, <strong>spin-off products</strong>, and <strong>services</strong>, each scored like a roadmap card and backed by real web evidence. Review them, then send the best ones back into Threlmark's Inbox.</p>
+      <div class="grid two">
+        <div class="feature"><div class="k">1 · Source</div><h4>Point at Threlmark</h4><p>Reads each project's roadmap straight off disk (<code>~/.threlmark</code>) — <strong>read-only</strong> — or via Threlmark's REST API. Configure it on the new <code>/settings</code> page; environment variables always win.</p></div>
+        <div class="feature"><div class="k">2 · Gap map</div><h4>Know the roadmap first</h4><p>A deterministic coverage read — which categories are strong, which are thin or entirely absent, what's done vs. still open — frames the analysis before any model runs.</p></div>
+        <div class="feature"><div class="k">3 · Three lanes</div><h4>Features · spin-offs · services</h4><p>Three independent research lanes sweep the web: gaps→features, adjacency→spin-offs, productize→services. You choose how many suggestions per lane.</p></div>
+        <div class="feature"><div class="k">4 · Real evidence</div><h4>Always real, never mock</h4><p>Live + strict only. Each suggestion cites real, actually-fetched source links plus a why-now. No sources means no fabrication — just a clear notice.</p></div>
+        <div class="feature"><div class="k">5 · Review</div><h4>Score, sources, select</h4><p>The review page shows impact/evidence/fit/effort, computed priority, the why-now, and source links per card. Tick the ones worth keeping.</p></div>
+        <div class="feature"><div class="k">6 · Send back</div><h4>Round-trip to the Inbox</h4><p>“Send to Threlmark” writes flat suggestion files into the project's <code>suggestions/</code> folder; Threlmark's Inbox accepts them into the roadmap. Pick a different target project to cross-promote.</p></div>
+      </div>
+      <div class="note">
+        <div class="ic">◆</div>
+        <div><p><strong>Read-only except one folder.</strong> IdeaClyst only ever writes into a Threlmark project's <code>suggestions/</code> directory — never its items, board, or metadata. Suggestions carry provenance (kind, why-now, sources) that round-trips intact through Threlmark's Inbox.</p></div>
+      </div>
+      <p>Analyses persist under <code>.ideaclyst/roadmap/&lt;id&gt;/</code> and the page polls live, just like a run. The data source and any REST base URL are set at <code>/settings</code>; see the new variables in <a href="#config">Configuration</a>. Roadmap intelligence is mode-gated like the rest of research — it runs live + strict and shows real data only.</p>
+    </section>
+
     <!-- LIFECYCLE -->
     <section id="lifecycle">
       <h2><span class="num">05</span>Request lifecycle</h2>
@@ -693,6 +714,15 @@ cat .ideaclyst/runs/<span class="v">&lt;runId&gt;</span>/FINAL_PLAN.md</pre>
         <tr><td><code>IDEACLYST_RESEARCH_MAX_RESULTS</code></td><td><code>6</code></td><td>Search results parsed per query</td></tr>
         <tr><td><code>IDEACLYST_RESEARCH_MAX_SOURCES</code></td><td><code>3</code></td><td>Pages deep-reconned</td></tr>
         <tr><td><code>IDEACLYST_RESEARCH_IDLE_MS</code></td><td><code>120000</code></td><td>Reap idle headless Chrome after</td></tr>
+      </table>
+      <h3>Roadmap intelligence (Threlmark)</h3>
+      <p>Where IdeaClyst reads Threlmark projects from. The <code>/settings</code> page edits these too; environment variables take precedence.</p>
+      <table class="tbl">
+        <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+        <tr><td><code>IDEACLYST_ROADMAP_SOURCE</code></td><td><span class="def">settings / disk</span></td><td><code>disk</code> or <code>rest</code></td></tr>
+        <tr><td><code>THRELMARK_DATA_DIR</code></td><td><code>~/.threlmark</code></td><td>Threlmark data root (disk source)</td></tr>
+        <tr><td><code>IDEACLYST_ROADMAP_DIR</code></td><td><span class="def">= THRELMARK_DATA_DIR</span></td><td>Explicit path override</td></tr>
+        <tr><td><code>IDEACLYST_THRELMARK_API</code></td><td><span class="def">none</span></td><td>Base URL for the REST source (e.g. <code>http://localhost:5418</code>)</td></tr>
       </table>
     </section>
 
