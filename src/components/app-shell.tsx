@@ -15,6 +15,7 @@ const NAV_GROUPS = [
       { href: "/runs", label: "Sessions" },
       { href: "/library", label: "Library" },
       { href: "/validation", label: "Validation" },
+      { href: "/roadmap", label: "Roadmap" },
     ],
   },
 ];
@@ -72,6 +73,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               className="rounded-md px-3 py-1.5 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
             >
               Profile
+            </Link>
+            <Link
+              href="/settings"
+              className="rounded-md px-3 py-1.5 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+            >
+              Settings
             </Link>
             <Link
               href="/new"
