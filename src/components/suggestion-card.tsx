@@ -68,16 +68,16 @@ export function SuggestionCard({
           </div>
           {s.acceptance.length > 0 ? (
             <ul className="mt-2 list-disc pl-4 text-xs text-zinc-500 space-y-0.5">
-              {s.acceptance.map((a, i) => (
-                <li key={i}>{a}</li>
+              {s.acceptance.map((a) => (
+                <li key={a}>{a}</li>
               ))}
             </ul>
           ) : null}
           {s.sources.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-2">
-              {s.sources.map((src, i) => (
+              {s.sources.map((src) => (
                 <a
-                  key={i}
+                  key={src.url}
                   href={src.url}
                   target="_blank"
                   rel="noreferrer"

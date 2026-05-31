@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useEffect, useMemo, useRef, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 import AppShell from "@/components/app-shell";
 import { SuggestionCard } from "@/components/suggestion-card";
@@ -51,8 +52,7 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
   const [target, setTarget] = useState("");
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [sending, setSending] = useState(false);
-  // Keep a ref to the latest analysis so the manual refresh after send picks it up.
-  const analysisRef = useRef<Analysis | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,16 +61,21 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
     async function poll() {
       try {
         const r = await fetch(`/api/roadmap/${id}`, { cache: "no-store" });
-        if (!r.ok) return;
+        if (!r.ok) {
+          const data = await r.json().catch(() => ({}));
+          throw new Error(data.error ?? `Failed to load analysis (${r.status})`);
+        }
         const d = (await r.json()) as { analysis: Analysis };
         if (cancelled) return;
         setAnalysis(d.analysis);
-        analysisRef.current = d.analysis;
+        setError(null);
         if (d.analysis.status === "queued" || d.analysis.status === "running") {
           timer = setTimeout(poll, POLL_MS);
         }
-      } catch {
-        if (!cancelled) timer = setTimeout(poll, POLL_MS * 2);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to load analysis");
+        timer = setTimeout(poll, POLL_MS * 2);
       }
     }
 
@@ -100,23 +105,62 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
   async function send() {
     if (checked.size === 0) return;
     setSending(true);
+    setError(null);
     try {
-      await fetch(`/api/roadmap/${id}/send`, {
+      const res = await fetch(`/api/roadmap/${id}/send`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ suggestionIds: [...checked], targetProjectId: target || undefined }),
       });
+      const data = (await res.json().catch(() => ({}))) as {
+        sent?: { id: string }[];
+        failed?: { id: string; error: string }[];
+        error?: string;
+      };
+      if (!res.ok) {
+        // Keep the selection so the user can retry. Surface partial-failure detail.
+        const sentCount = data.sent?.length ?? 0;
+        const failedCount = data.failed?.length ?? 0;
+        setError(
+          failedCount > 0
+            ? `${sentCount} sent, ${failedCount} failed.`
+            : data.error ?? `Send failed (${res.status})`,
+        );
+        return;
+      }
+      const failedCount = data.failed?.length ?? 0;
+      if (failedCount > 0) {
+        setError(`${data.sent?.length ?? 0} sent, ${failedCount} failed.`);
+      }
       setChecked(new Set());
       // Refresh once to pick up sentSuggestionId fields.
       const r = await fetch(`/api/roadmap/${id}`, { cache: "no-store" });
       if (r.ok) {
         const d = (await r.json()) as { analysis: Analysis };
         setAnalysis(d.analysis);
-        analysisRef.current = d.analysis;
       }
+    } catch {
+      setError("Send failed. Check your connection and try again.");
     } finally {
       setSending(false);
     }
+  }
+
+  if (error && !analysis) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-5xl py-8">
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
+            {error}
+            <div className="mt-3">
+              <Link href="/roadmap" className="font-medium underline">
+                ← Back to roadmap
+              </Link>
+            </div>
+          </div>
+        </div>
+      </AppShell>
+    );
   }
 
   if (!analysis) {
@@ -181,6 +225,7 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
           >
             {sending ? "Sending…" : "Send to Threlmark"}
           </button>
+          {error && analysis ? <span className="text-sm text-rose-600">{error}</span> : null}
         </div>
 
         {/* Three-column lane grid */}

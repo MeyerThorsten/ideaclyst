@@ -69,7 +69,13 @@ export function RoadmapForm() {
   }
 
   return (
-    <div className="space-y-5">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+      className="space-y-5"
+    >
       <div>
         <label htmlFor="projectId" className={labelCls}>
           Project
@@ -115,12 +121,12 @@ export function RoadmapForm() {
       ) : null}
 
       <button
-        onClick={submit}
+        type="submit"
         disabled={submitting || !projectId}
         className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? "Starting…" : "Analyze roadmap"}
       </button>
-    </div>
+    </form>
   );
 }
