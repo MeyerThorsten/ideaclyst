@@ -15,12 +15,23 @@ async function writeFileAtomic(path: string, contents: string): Promise<void> {
   await rename(tmp, path);
 }
 
+/**
+ * A project id must be a single safe path segment — never empty, never a path
+ * traversal — so a writer can never escape the Threlmark projects/ tree.
+ */
+function assertSafeProjectId(projectId: string): void {
+  if (!projectId || projectId === "." || projectId === ".." || /[\\/]/.test(projectId) || projectId.includes("..")) {
+    throw new Error(`Unsafe project id: ${JSON.stringify(projectId)}`);
+  }
+}
+
 /** Returns the suggestion id (filename without .json). */
 export async function writeSuggestionToDisk(
   projectId: string,
   suggestion: ThrelmarkSuggestionFile,
   settingsDataDir?: string,
 ): Promise<string> {
+  assertSafeProjectId(projectId);
   const root = resolveDataRoot(settingsDataDir);
   const dir = suggestionsDir(root, projectId);
   await mkdir(dir, { recursive: true });

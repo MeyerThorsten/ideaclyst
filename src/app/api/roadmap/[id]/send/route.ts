@@ -38,9 +38,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   };
 
   const source = await getSource();
-  const generatedAt = new Date().toISOString();
   // Write to the analyzed project unless a target is chosen; targetProjectId stays
-  // inside the file so Threlmark can cross-promote on accept.
+  // inside the file so Threlmark can cross-promote on accept. A chosen target must be
+  // a known project (rejects typos and any path-traversal value before we write).
+  if (targetProjectId) {
+    const projects = await source.listProjects();
+    if (!projects.some((p) => p.id === targetProjectId)) {
+      return NextResponse.json(
+        { error: `Unknown target project: ${targetProjectId}` },
+        { status: 400 },
+      );
+    }
+  }
+  const generatedAt = new Date().toISOString();
   const destProjectId = targetProjectId || analysis.projectId;
 
   const sent: { id: string; sentSuggestionId: string }[] = [];
