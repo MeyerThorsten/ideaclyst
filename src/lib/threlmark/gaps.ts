@@ -3,6 +3,7 @@
  * pure counting so the orchestrator can feed real structure into prompts and the UI.
  */
 
+import { THRELMARK_CATEGORIES } from "./categories";
 import { THRELMARK_LANES, type GapMap, type ThrelmarkItemView, type ThrelmarkStatus } from "./types";
 
 export function buildGapMap(items: ThrelmarkItemView[]): GapMap {
@@ -16,6 +17,11 @@ export function buildGapMap(items: ThrelmarkItemView[]): GapMap {
     if (it.status === "done") c.done++;
     else c.open++;
     byCategory.set(it.category, c);
+  }
+
+  // Seed every known category so entirely-absent ones surface in underCovered.
+  for (const cat of THRELMARK_CATEGORIES) {
+    if (!byCategory.has(cat)) byCategory.set(cat, { total: 0, done: 0, open: 0 });
   }
 
   const categoryCoverage = [...byCategory.entries()]

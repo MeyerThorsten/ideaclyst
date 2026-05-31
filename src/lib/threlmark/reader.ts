@@ -4,9 +4,10 @@
  */
 
 import { readFile, readdir, stat } from "node:fs/promises";
+import { join } from "node:path";
 
 import {
-  boardPath, itemsDir, projectJsonPath, projectsRoot, resolveDataRoot,
+  boardPath, itemsDir, projectDir, projectJsonPath, projectsRoot, resolveDataRoot,
 } from "./paths";
 import { buildGapMap } from "./gaps";
 import { withPriority } from "./priority";
@@ -69,7 +70,7 @@ export async function listProjectsFromDisk(settingsDataDir?: string): Promise<Pr
   const out: ProjectSummary[] = [];
   for (const id of names) {
     try {
-      if (!(await stat(projectsRoot(root) + "/" + id)).isDirectory()) continue;
+      if (!(await stat(projectDir(root, id))).isDirectory()) continue;
     } catch {
       continue;
     }
@@ -81,7 +82,7 @@ export async function listProjectsFromDisk(settingsDataDir?: string): Promise<Pr
       const files = (await readdir(itemsDir(root, id))).filter((f) => f.endsWith(".json"));
       itemCount = files.length;
       for (const f of files) {
-        const it = await readJson<Record<string, unknown>>(itemsDir(root, id) + "/" + f);
+        const it = await readJson<Record<string, unknown>>(join(itemsDir(root, id), f));
         if (it && it.status === "done") doneCount++;
       }
     } catch {
@@ -110,7 +111,7 @@ export async function readProjectFromDisk(
   try {
     const files = (await readdir(itemsDir(root, id))).filter((f) => f.endsWith(".json"));
     for (const f of files) {
-      const raw = await readJson<Record<string, unknown>>(itemsDir(root, id) + "/" + f);
+      const raw = await readJson<Record<string, unknown>>(join(itemsDir(root, id), f));
       if (!raw) continue;
       const itemId = typeof raw.id === "string" ? raw.id : f.replace(/\.json$/, "");
       items.push(withPriority(normalizeItem(raw, id, itemId)));

@@ -5,6 +5,8 @@
  * and clamp so a malformed external write never crashes us.
  */
 
+import type { ThrelmarkCategory } from "./categories";
+
 export const THRELMARK_LANES = ["idea", "ranked", "development", "done"] as const;
 export type ThrelmarkStatus = (typeof THRELMARK_LANES)[number];
 
@@ -26,7 +28,7 @@ export interface ThrelmarkItem {
   id: string;
   projectId: string;
   title: string;
-  category: string;
+  category: ThrelmarkCategory;
   status: ThrelmarkStatus;
   impact: number; // 1-5
   evidence: number; // 1-5
