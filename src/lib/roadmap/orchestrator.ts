@@ -80,22 +80,26 @@ async function runLane(
     return { notes: strictResearch() ? STRICT_EMPTY_NOTICE : "Synthesis produced no suggestions.", suggestions: [] };
   }
 
-  const suggestions: RoadmapSuggestion[] = parsed.slice(0, perKind).map((p, i) => ({
-    id: suggestionId(kind, i),
-    kind,
-    title: p.title,
-    description: p.description,
-    category: p.category,
-    impact: p.impact,
-    evidence: p.evidence,
-    fit: p.fit,
-    effort: p.effort,
-    acceptance: p.acceptance,
-    rationale: p.rationale,
-    // Keep only sources we actually gathered (avoid model-invented URLs): prefer
-    // the model's, but ensure each url appeared in the real web set when possible.
-    sources: p.sources.length ? p.sources : web.slice(0, 3).map((w) => ({ title: w.title, url: w.url })),
-  }));
+  const suggestions: RoadmapSuggestion[] = parsed.slice(0, perKind).map((p, i) => {
+    // Keep only model-cited sources whose URL we actually fetched (in `seen`); if
+    // none remain, fall back to the real gathered web results. Guarantees every
+    // persisted source URL was actually retrieved (always-real-data invariant).
+    const realSources = p.sources.filter((s) => seen.has(s.url));
+    return {
+      id: suggestionId(kind, i),
+      kind,
+      title: p.title,
+      description: p.description,
+      category: p.category,
+      impact: p.impact,
+      evidence: p.evidence,
+      fit: p.fit,
+      effort: p.effort,
+      acceptance: p.acceptance,
+      rationale: p.rationale,
+      sources: realSources.length ? realSources : web.slice(0, 3).map((w) => ({ title: w.title, url: w.url })),
+    };
+  });
 
   return { notes: `Grounded in ${web.length} web source(s).`, suggestions };
 }
@@ -124,18 +128,18 @@ export async function startAnalysis(id: string): Promise<void> {
       currentStep: "Researching features",
     });
 
-    const lanesOrder: { kind: SuggestionKind; step: string }[] = [
+    const lanesOrder: { kind: SuggestionKind; step?: string }[] = [
       { kind: "feature", step: "Researching spin-offs" },
       { kind: "spinoff", step: "Researching services" },
-      { kind: "service", step: undefined as unknown as string },
+      { kind: "service" },
     ];
 
     for (const { kind, step } of lanesOrder) {
       const result = await runLane(id, read, kind, a.perKind);
       const current = await getAnalysis(id);
-      if (!current) return;
+      if (!current) throw new Error(`analysis ${id} vanished during lane "${kind}"`);
       const lanes = { ...current.lanes, [kind]: result } as RoadmapAnalysis["lanes"];
-      await updateAnalysis(id, { lanes, currentStep: step || undefined });
+      await updateAnalysis(id, { lanes, currentStep: step });
     }
 
     await updateAnalysis(id, { status: "completed", currentStep: undefined });

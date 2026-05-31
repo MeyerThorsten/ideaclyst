@@ -28,12 +28,19 @@ export function SettingsForm() {
 
   async function save() {
     setSaving(true);
-    await fetch("/api/settings", {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ roadmapSource: source, dataDir, baseUrl }),
-    }).catch(() => {});
-    setSaving(false);
+    try {
+      const r = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ roadmapSource: source, dataDir, baseUrl }),
+      });
+      if (!r.ok) throw new Error(String(r.status));
+      setTest("Settings saved.");
+    } catch {
+      setTest("Save failed — check console.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function testConnection() {
