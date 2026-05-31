@@ -48,6 +48,25 @@ export function researchMode(): ResearchMode {
   return agentMode() === "cli" ? "live" : "mock";
 }
 
+/**
+ * Strict mode: when on, the research layer NEVER shows fabricated/offline ("mock")
+ * content — if live data can't be gathered it surfaces a clear notice instead.
+ * Use it when you only want real data and would rather see "no data" than a mock.
+ */
+export function strictResearch(): boolean {
+  const v = (process.env.IDEACLYST_RESEARCH_STRICT || "").toLowerCase();
+  return v === "1" || v === "true" || v === "on";
+}
+
+const STRICT_MOCK_NOTICE =
+  "_⚠️ Research is in **mock mode**, so no real data was gathered. Set `IDEACLYST_AGENT_MODE=cli` " +
+  "(or `IDEACLYST_RESEARCH_MODE=live`) and make sure Chrome is installed, then re-run. " +
+  "Strict mode is on, so no offline analysis is shown._";
+
+const STRICT_EMPTY_NOTICE =
+  "_⚠️ Live research returned **no web sources** (possible anti-bot block or network issue). " +
+  "Retry in a moment — strict mode is on, so no offline/mock analysis is shown._";
+
 function num(env: string, dflt: number): number {
   return Number(process.env[env]) || dflt;
 }
@@ -114,6 +133,10 @@ async function pageSource(
 }
 
 function withToolkit(run: Run, result: ResearchResult, competitorUrls: string[]): ResearchResult {
+  // Strict mode: never fabricate a toolkit from mock sources when no real sources exist.
+  if (strictResearch() && result.sources.length === 0) {
+    return { ...result, toolkit: undefined };
+  }
   const sources = result.sources.length ? result.sources : mockSourcesForRun(run, competitorUrls);
   const toolkit = buildResearchToolkit(run, sources, {
     competitorUrls,
@@ -174,6 +197,9 @@ async function liveMarketResearch(
 
     if (!sources.length) {
       notes.push("no web results (possible anti-bot block)");
+      if (strictResearch()) {
+        return { ok: false, degraded: true, note: notes.join("; "), findings: STRICT_EMPTY_NOTICE, sources: [] };
+      }
       return mockMarketResearch(run, `Live research returned nothing (${notes.join("; ")}).`);
     }
 
@@ -181,6 +207,16 @@ async function liveMarketResearch(
     // for a synthesis call (keeps the step bounded and avoids orphaned work).
     if (Date.now() > deadline) {
       notes.push("budget reached before synthesis");
+      if (strictResearch()) {
+        // Real sources gathered — show them, but don't fabricate a synthesized memo.
+        return {
+          ok: true,
+          degraded: true,
+          note: `Live research (partial: ${notes.join("; ")}).`,
+          findings: `_Synthesis skipped (research budget reached). Gathered sources below._${sourcesFooter(sources)}`,
+          sources,
+        };
+      }
       const fb = mockMarketResearch(run, `Live research (partial: ${notes.join("; ")}).`);
       return { ...fb, findings: `${fb.findings}${sourcesFooter(sources)}`, sources };
     }
@@ -209,6 +245,9 @@ export async function runMarketResearch(
   const competitorUrls = parseCompetitorUrls(opts.competitorUrls);
 
   if (researchMode() === "mock") {
+    if (strictResearch()) {
+      return { ok: false, degraded: true, note: "Strict mode: research is in mock mode.", findings: STRICT_MOCK_NOTICE, sources: [] };
+    }
     const res = mockMarketResearch(run);
     const teardown = mockCompetitorTeardown(competitorUrls);
     if (teardown) res.findings += `\n\n${teardown}`;
@@ -224,6 +263,9 @@ export async function runMarketResearch(
     return withToolkit(run, await liveMarketResearch(run, competitorUrls, deadline), competitorUrls);
   } catch (err) {
     const reason = err instanceof Error ? err.message : "unknown error";
+    if (strictResearch()) {
+      return { ok: false, degraded: true, note: `Live research unavailable (${reason}).`, findings: STRICT_EMPTY_NOTICE, sources: [] };
+    }
     const res = mockMarketResearch(run, `Live research unavailable (${reason}) — used offline synthesis.`);
     res.sources = mockSourcesForRun(run, competitorUrls);
     return withToolkit(run, res, competitorUrls);
@@ -365,6 +407,9 @@ function discoveryQueries(brief: DiscoveryBrief): DiscoveryQuery[] {
 /** Stage 1 — scout the web for the brief (mock → empty; live → real sources). */
 export async function scoutMarket(brief: DiscoveryBrief): Promise<DiscoveryScoutResult> {
   if (researchMode() === "mock") {
+    if (strictResearch()) {
+      return { ok: false, degraded: true, note: "Strict mode: research is in mock mode.", sources: [] };
+    }
     const sources = mockSourcesForRun(
       {
         id: "discovery",
@@ -406,7 +451,11 @@ export async function scoutMarket(brief: DiscoveryBrief): Promise<DiscoveryScout
     // Deadline (not an abandoning race) so Chrome is always released cleanly.
     const deadline = Date.now() + num("IDEACLYST_RESEARCH_BUDGET_MS", 60_000);
     const scout = await liveScout(discoveryQueries(brief), deadline);
-    return { ...scout, opportunityMap: buildDiscoveryOpportunityMap(brief, scout.sources) };
+    // Only build an opportunity map from real sources (never fabricate from mock).
+    return {
+      ...scout,
+      opportunityMap: scout.sources.length ? buildDiscoveryOpportunityMap(brief, scout.sources) : undefined,
+    };
   } catch (err) {
     const reason = err instanceof Error ? err.message : "unknown error";
     return { ok: false, degraded: true, note: `Scout unavailable (${reason}).`, sources: [] };
@@ -418,8 +467,13 @@ export async function marketReadFor(
   brief: DiscoveryBrief,
   sources: ResearchSource[],
 ): Promise<string> {
-  if (researchMode() === "mock" || sources.length === 0) {
-    return mockMarketRead(brief);
+  if (researchMode() === "mock") {
+    return strictResearch() ? STRICT_MOCK_NOTICE : mockMarketRead(brief);
+  }
+  if (sources.length === 0) {
+    return strictResearch()
+      ? STRICT_EMPTY_NOTICE
+      : mockMarketRead(brief, "Live research returned no web sources — offline synthesis shown as a fallback.");
   }
   try {
     const ctxRun = { id: "discovery", title: brief.domain, idea: brief.domain } as unknown as Run;
@@ -427,9 +481,10 @@ export async function marketReadFor(
       run: ctxRun,
       stepKey: "marketResearch",
     });
-    return md.trim() || mockMarketRead(brief);
+    if (md.trim()) return md.trim();
+    return strictResearch() ? STRICT_EMPTY_NOTICE : mockMarketRead(brief);
   } catch {
-    return mockMarketRead(brief);
+    return strictResearch() ? STRICT_EMPTY_NOTICE : mockMarketRead(brief);
   }
 }
 
@@ -440,6 +495,8 @@ export async function candidatesFor(
   marketRead: string,
 ): Promise<IdeaCandidate[]> {
   if (researchMode() === "mock" || sources.length === 0) {
+    // Strict mode: no fabricated candidates when there's no real data.
+    if (strictResearch()) return [];
     return scoreCandidates(brief, mockDiscoveryCandidates(brief), sources);
   }
   try {
@@ -449,9 +506,10 @@ export async function candidatesFor(
       stepKey: "marketResearch",
     });
     const parsed = parseCandidates(raw);
-    return scoreCandidates(brief, parsed.length ? parsed : mockDiscoveryCandidates(brief), sources);
+    if (parsed.length) return scoreCandidates(brief, parsed, sources);
+    return strictResearch() ? [] : scoreCandidates(brief, mockDiscoveryCandidates(brief), sources);
   } catch {
-    return scoreCandidates(brief, mockDiscoveryCandidates(brief), sources);
+    return strictResearch() ? [] : scoreCandidates(brief, mockDiscoveryCandidates(brief), sources);
   }
 }
 

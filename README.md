@@ -413,6 +413,7 @@ src/
 | Var | Default | Purpose |
 |-----|---------|---------|
 | `IDEACLYST_RESEARCH_MODE` | _(follows agent mode)_ | `mock` or `live` override |
+| `IDEACLYST_RESEARCH_STRICT` | _(off)_ | `1` = never show mock/offline content; show a clear notice if live data is unavailable (pair with `live`) |
 | `IDEACLYST_RESEARCH_ENGINE` | `duckduckgo` | `duckduckgo` (default) · `bing` · `google` |
 | `IDEACLYST_CHROME_BIN` | _(auto-detected)_ | Chrome/Chromium path override |
 | `IDEACLYST_RESEARCH_USER_AGENT` | _(desktop Chrome UA)_ | UA override (avoids headless bot challenges) |
