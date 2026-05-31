@@ -3,7 +3,7 @@
  * Threlmark roadmap source. Resolution precedence so env always wins:
  *   source:  IDEACLYST_ROADMAP_SOURCE > settings.roadmapSource > "disk"
  *   dataDir: IDEACLYST_ROADMAP_DIR | THRELMARK_DATA_DIR > settings.dataDir > ~/.threlmark (in paths)
- *   baseUrl: IDEACLYST_THRELMARK_API > settings.baseUrl > "http://localhost:5418"
+ *   baseUrl: IDEACLYST_THRELMARK_API > settings.baseUrl > undefined (no code default; UI placeholder only)
  */
 
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";

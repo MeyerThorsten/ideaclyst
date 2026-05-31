@@ -20,5 +20,6 @@ export async function getSource(): Promise<ThrelmarkSource> {
   if (settings.roadmapSource === "rest" && settings.baseUrl) {
     return new RestSource(settings.baseUrl, settings.dataDir);
   }
+  // Disk is the default, and also the fallback when roadmapSource==="rest" but baseUrl is unset.
   return new DiskSource(settings.dataDir);
 }

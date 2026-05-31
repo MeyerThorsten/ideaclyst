@@ -1,3 +1,5 @@
+/** Disk implementation of ThrelmarkSource. Thin wrapper delegating to reader.ts and writer.ts. */
+
 import { listProjectsFromDisk, readProjectFromDisk } from "./reader";
 import { writeSuggestionToDisk } from "./writer";
 import type { ThrelmarkSource } from "./source";

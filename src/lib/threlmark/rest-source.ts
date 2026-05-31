@@ -68,9 +68,11 @@ export class RestSource implements ThrelmarkSource {
         body: JSON.stringify(suggestion),
       });
       if (res.ok) {
+        // 2xx means the server stored it — never double-write to disk.
         const data = (await res.json().catch(() => ({}))) as { id?: string };
-        if (data.id) return data.id;
+        return data.id ?? `rest-accepted-${Date.now()}`;
       }
+      // (fall through to disk only on non-2xx)
     } catch {
       /* fall through to disk */
     }
