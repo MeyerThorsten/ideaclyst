@@ -3,12 +3,29 @@ import Link from "next/link";
 import DiscoveryForm from "@/components/discovery-form";
 import { listDiscoveries } from "@/lib/discovery/store";
 import StatusPill from "@/components/status-pill";
+import { getFounderProfile } from "@/lib/profile/store";
+import { profileToDiscoveryContext } from "@/lib/profile/summary";
+import { discoverySuggestions } from "@/lib/discovery/suggestions";
+import { sourceLanePerformance } from "@/lib/discovery/analytics";
 
 // Always read fresh from disk — discoveries change as scouting progresses.
 export const dynamic = "force-dynamic";
 
-export default async function DiscoverPage() {
-  const discoveries = await listDiscoveries();
+export default async function DiscoverPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ domain?: string }>;
+}) {
+  const [discoveries, profile, suggestions, laneStats] = await Promise.all([
+    listDiscoveries(),
+    getFounderProfile(),
+    discoverySuggestions(),
+    sourceLanePerformance(),
+  ]);
+  const params = await searchParams;
+  const profileContext = profileToDiscoveryContext(profile);
+  const initialCapacity = profile?.builderStage === "scaling" ? "team" : "ai-assisted";
+  const initialDomain = typeof params?.domain === "string" ? params.domain.slice(0, 160) : "";
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -20,7 +37,41 @@ export default async function DiscoverPage() {
         </p>
       </div>
 
-      <DiscoveryForm />
+      <DiscoveryForm
+        initialDomain={initialDomain}
+        initialCapacity={initialCapacity}
+        profileContext={profileContext}
+        suggestions={suggestions}
+      />
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <Link href="/today" className="rounded-xl border border-zinc-200 bg-white p-4 text-sm transition hover:bg-zinc-50">
+          <span className="font-semibold text-zinc-900">Idea of the day</span>
+          <span className="mt-1 block text-xs text-zinc-500">Deterministic daily pick from local reports.</span>
+        </Link>
+        <Link href="/settings/research" className="rounded-xl border border-zinc-200 bg-white p-4 text-sm transition hover:bg-zinc-50">
+          <span className="font-semibold text-zinc-900">Research lanes</span>
+          <span className="mt-1 block text-xs text-zinc-500">Tune source templates without code edits.</span>
+        </Link>
+        <Link href="/insights" className="rounded-xl border border-zinc-200 bg-white p-4 text-sm transition hover:bg-zinc-50">
+          <span className="font-semibold text-zinc-900">Market insights</span>
+          <span className="mt-1 block text-xs text-zinc-500">Browse saved market reads and source confidence.</span>
+        </Link>
+      </div>
+
+      {laneStats.length ? (
+        <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-5">
+          <h2 className="text-sm font-semibold text-zinc-900">Source lane performance</h2>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {laneStats.slice(0, 4).map((lane) => (
+              <div key={lane.lane} className="rounded-xl bg-zinc-50 p-3 text-xs text-zinc-600 ring-1 ring-inset ring-zinc-200">
+                <div className="font-semibold text-zinc-900">{lane.lane}</div>
+                <div className="mt-1">{lane.sourceCount} sources · {lane.candidateCount} candidates · {lane.averageCandidateScore}/100 avg</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {discoveries.length > 0 ? (
         <div className="mt-10">

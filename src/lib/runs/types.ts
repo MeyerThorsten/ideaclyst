@@ -21,6 +21,8 @@ export interface RunOutputs {
   researchToolkit: string;
   /** Concise founder-ready brief generated from the research toolkit. */
   founderBrief: string;
+  /** Human-readable diff after a research/report rerun. */
+  evolutionDiff: string;
   productStrategy: string;
   technicalArchitecture: string;
   claudeCritique: string;
@@ -31,6 +33,7 @@ export interface RunOutputs {
   mvpBacklog: string;
   risks: string;
   validationTests: string;
+  prd: string;
   nextPrompts: string;
   // Running log of every council exchange:
   transcript: string;
@@ -54,7 +57,18 @@ export interface Run {
   error?: string;
   /** Human-readable label of the step currently executing (for the UI). */
   currentStep?: string;
+  metrics?: RunMetrics;
   outputs: RunOutputs;
+}
+
+export interface RunMetrics {
+  startedAt?: string;
+  completedAt?: string;
+  elapsedMs?: number;
+  agentCalls: number;
+  estimatedInputTokens: number;
+  estimatedOutputTokens: number;
+  estimatedCostUsd: number;
 }
 
 /** Input accepted by POST /api/runs. */
@@ -82,6 +96,7 @@ export function emptyOutputs(): RunOutputs {
     researchFindings: "",
     researchToolkit: "",
     founderBrief: "",
+    evolutionDiff: "",
     productStrategy: "",
     technicalArchitecture: "",
     claudeCritique: "",
@@ -91,6 +106,7 @@ export function emptyOutputs(): RunOutputs {
     mvpBacklog: "",
     risks: "",
     validationTests: "",
+    prd: "",
     nextPrompts: "",
     transcript: "",
   };

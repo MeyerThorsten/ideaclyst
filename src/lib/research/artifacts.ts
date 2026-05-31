@@ -21,7 +21,7 @@ import {
   ScopeNegotiation,
   ValidationExperiment,
 } from "./types";
-import { buildCandidateInsightReport } from "./idea-reports";
+import { buildCandidateInsightReport, existingProductMatches } from "./idea-reports";
 
 const PAIN_WORDS = [
   "problem",
@@ -704,7 +704,13 @@ export function scoreCandidates(
     const buildFit = candidate.buildEffort === "low" ? 5 : candidate.buildEffort === "moderate" ? 4 : 2;
     const monetizationClarity =
       candidate.commercial === "strong" ? 5 : candidate.commercial === "medium" ? 3 : brief.goal === "commercial" ? 2 : 3;
-    const competitionIntensity = sourceTypes.has("competitor") || sourceTypes.has("launch") ? 4 : 2;
+    const matches = existingProductMatches(candidate, sources);
+    const strongMatches = matches.filter((match) => match.strength === "strong").length;
+    const competitionIntensity = strongMatches
+      ? 5
+      : sourceTypes.has("competitor") || sourceTypes.has("launch")
+        ? 4
+        : 2;
     const demandEvidence = candidate.signal ? Math.max(3, evidence) : evidence;
     const novelty = candidate.title.toLowerCase().includes(brief.domain.toLowerCase()) ? noveltyBase : Math.min(5, noveltyBase + 1);
     const overall = Math.round(
@@ -753,6 +759,7 @@ export function buildDiscoveryOpportunityMap(
       researchFindings: "",
       researchToolkit: "",
       founderBrief: "",
+      evolutionDiff: "",
       productStrategy: "",
       technicalArchitecture: "",
       claudeCritique: "",
@@ -762,6 +769,7 @@ export function buildDiscoveryOpportunityMap(
       mvpBacklog: "",
       risks: "",
       validationTests: "",
+      prd: "",
       nextPrompts: "",
       transcript: "",
     },

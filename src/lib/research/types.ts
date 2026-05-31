@@ -145,6 +145,10 @@ export interface IdeaCandidate {
   sourceUrl?: string;
   confidence?: CandidateConfidence;
   killCriteria?: string[];
+  forYou?: {
+    score: number;
+    reasons: string[];
+  };
   report?: CandidateInsightReport;
 }
 
@@ -280,6 +284,9 @@ export interface KeywordAnalysis {
   fastestGrowing: KeywordInsight[];
   highestVolume: KeywordInsight[];
   mostRelevant: KeywordInsight[];
+  source?: string;
+  freshness?: string;
+  generatedAt?: string;
 }
 
 export interface FounderFitInsight {
@@ -298,6 +305,15 @@ export interface RoastInsight {
   deRiskingMoves: string[];
 }
 
+export interface ExistingProductMatch {
+  title: string;
+  url: string;
+  sourceName: string;
+  sourceType: ResearchSourceType | "unknown";
+  strength: "strong" | "possible";
+  rationale: string;
+}
+
 export interface CandidateInsightReport {
   generatedAt: string;
   oneLine: string;
@@ -314,6 +330,7 @@ export interface CandidateInsightReport {
   founderFit: FounderFitInsight;
   roast: RoastInsight;
   buildActions: string[];
+  existingProducts?: ExistingProductMatch[];
   sources: ResearchSource[];
 }
 

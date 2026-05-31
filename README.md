@@ -89,6 +89,11 @@ MVP Backlog, Risks, Validation Tests, and ready-to-paste Next Prompts.
 - **Graceful failure** — a missing or failing CLI marks the run failed with a clear
   message; completed steps survive.
 - **No secrets handled** — both CLIs authenticate via their own local sessions.
+- **Grouped navigation** — the header keeps the primary start action visible while
+  grouping idea scouting under **Explore** (`/discover`, `/trends`) and saved work under
+  **Workspace** (`/runs`, `/library`, `/compare`); `/profile` stays directly reachable.
+- **Evidence and validation workspaces** — source audit, validation board, analytics,
+  interview CRM, and idea clusters are generated from local run/discovery/report data.
 
 ---
 
@@ -134,10 +139,49 @@ data — and to help you *find* ideas, not just evaluate them.
   experiments from the same evidence.
 - **Rerun research only** — on a completed run page, use **Rerun research** to queue a
   background refresh of the surfagent-derived artifacts without rerunning the full
-  Claude+Codex council. The page polls until the refreshed toolkit lands on disk.
+  Claude+Codex council. The page polls until the refreshed toolkit lands on disk, writes
+  `EVOLUTION_DIFF.md`, and shows the changed research in a **Diff** tab.
+- **Run cost and time meter** — runs record elapsed wall-clock time, agent call count,
+  approximate input/output tokens, and an estimated cost. Mock mode stays local and records
+  zero estimated spend.
 - **Idea Discovery** (`/discover`) — don't have an idea yet? Give a market and IdeaClyst
   finds candidate ideas for you, then opens a full report for each one. See its own section
   below.
+- **Idea of the day** (`/today`) — a deterministic daily pick from saved local candidate
+  reports, with links to the report, funnel, and build workspace.
+- **Trend radar** (`/trends`) — turns local discoveries and report keyword maps into a
+  market signal library with source confidence, related communities, candidate links, and a
+  one-click path to scout any trend as a new discovery.
+- **Market insights and monitors** — `/insights` persists market insight reports
+  separately from discoveries; `/monitors` reruns local competitor/trend snapshots and writes
+  human-readable diffs to `.ideaclyst/monitors/`.
+- **Compare, export, hand off** — full candidate reports can be copied as Markdown, JSON,
+  a one-page founder brief, or Claude/Codex implementation and review prompts; selected
+  reports can also be compared side by side at `/compare`.
+- **Founder profile** — `/profile` stores your stage, capacity, skills, market access,
+  risk tolerance, sales comfort, capital, and unfair advantages locally; discovery uses it
+  to prefill scouting context and reports show a personal-fit lens.
+- **My Stuff library** — save candidate ideas and full reports from discovery cards/report
+  pages into `/library`; the library persists as JSON and Markdown under `.ideaclyst/`.
+- **Keyword intelligence adapter** — candidate reports label keyword source/freshness and
+  can consume an optional keyword snapshot JSON while preserving deterministic offline
+  estimates when no provider is configured.
+- **Evidence browser** (`/evidence`) — audits every source captured by runs,
+  discoveries, and candidate reports with confidence, freshness, claims, warnings, and
+  backlinks to the artifact that used it.
+- **Validation workspace** (`/validation`, `/validation/import`, `/validation/analytics`,
+  `/interviews`) — turns report next actions, pricing hypotheses, buyer personas, pasted
+  validation results, and CSV-like outreach/waitlist data into a local sprint board,
+  analytics view, and interview target list under `.ideaclyst/validation` and
+  `.ideaclyst/interviews`.
+- **Build workspaces** — candidate reports link to a minimum viable funnel, buyer
+  personas, report-grounded advisor answers, a landing-page draft, local share packet,
+  report version history, and a build-this-idea project page with a PRD/task queue.
+- **Decision log and council memory** — report pages can log promoted/validated/parked/killed
+  decisions with evidence; `.ideaclyst/decisions/DECISIONS.md` becomes compact, inspectable
+  memory that future council prompts can use.
+- **Research settings** (`/settings/research`) — source lanes, query templates, caps, risk
+  labels, cache TTL, and cache size are inspectable and stored locally.
 
 Research is **best-effort and mode-gated**, mirroring the agent seam:
 
@@ -158,29 +202,41 @@ candidates, grounded in live demand signals instead of a blank page.
 
 **The flow** (`/discover`):
 
-1. **Brief it** — a market or space (e.g. *"visionOS apps"*, *"AI for accountants"*) **plus
+1. **Profile yourself** *(optional)* — fill out `/profile` once so discovery can account
+   for your skills, buyer access, risk tolerance, budget, and available time.
+2. **Brief it** — a market or space (e.g. *"visionOS apps"*, *"AI for accountants"*) **plus
    your goal** (commercial · portfolio · learning · personal) and **build capacity** (solo ·
-   team · AI-assisted), and any constraints. These shape the whole result.
-2. **Scout** — headless Chrome (surfagent) sweeps source-specific search lanes — **Hacker
+   team · AI-assisted), and any constraints. If a founder profile exists, its context is
+   prefilled into the notes and can be edited per discovery.
+3. **Scout** — headless Chrome (surfagent) sweeps configurable source-specific search lanes — **Hacker
    News, Reddit, Product Hunt, GitHub, commercial review/pricing pages, and general web** —
    for problems, *"I wish there was…"* posts, recent launches, and implementation ecosystems.
    Each source is best-effort and skipped-with-note if it's walled or blocked.
-3. **Market read** — Claude writes an **honest, sourced read** of the space first: a one-line
+4. **Market read** — Claude writes an **honest, sourced read** of the space first: a one-line
    verdict, demand signals, competition, who actually pays, and a realistic outlook for *your*
    goal — not blind optimism.
-4. **Opportunity map** — the scout also builds a high-pain/competition map so the page shows
+5. **Opportunity map** — the scout also builds a high-pain/competition map so the page shows
    which zones are sharp wedges, validated-but-crowded bets, exploratory ideas, or likely
    skips.
-5. **Ranked concepts** — then **5–7 candidate ideas, ranked best-fit-first**, each carrying a
+6. **Ranked concepts** — then **5–7 candidate ideas, ranked best-fit-first**, each carrying a
    wedge, **who pays**, **build effort** (low/moderate/high for your capacity), **commercial
    strength** (strong/medium/weak for your goal), the **biggest risk**, **why it fits**, and the
    **signal + source** that surfaced it. Each card includes a transparent confidence score
-   across demand evidence, build fit, monetization clarity, novelty, and competition.
-6. **Full idea report** — before promoting, every candidate gets an IdeaBrowser-style local
+   across demand evidence, build fit, monetization clarity, novelty, and competition. When a
+   founder profile exists, a for-you rank explains the personal fit and penalties.
+7. **Full idea report** — before promoting, every candidate gets an IdeaBrowser-style local
    report at `/discover/[id]/ideas/[candidateId]`: scorecard, business fit, offer/value ladder,
    why-now factors, proof signals, market gaps, execution plan, framework fit, community and
-   keyword intelligence, founder fit, and a roast.
-7. **Promote to council** — one click turns a candidate into a normal run, carrying the report
+   keyword intelligence, founder fit, a profile lens, and a roast.
+8. **Save, compare, and export** — save candidates/reports into `/library`, add reports to
+   `/compare` to sort ideas side by side by opportunity, founder fit, feasibility, or timing,
+   copy the full Markdown report, structured JSON, a concise one-pager, an implementation
+   prompt, or a review-only prompt, regenerate reports without rebuilding the discovery, and
+   export a self-contained local HTML packet.
+9. **Watch trends** — `/trends` rolls discoveries, report keywords, source lanes, and related
+   communities into a local market-signal library. Each trend links back to candidate reports
+   and can prefill `/discover` so you can scout the signal further.
+10. **Promote to council** — one click turns a candidate into a normal run, carrying the report
    thesis, founder-fit note, core offer, and roast verdict into the council brief. The run then
    executes its own market-research Step 0 and the full 5-step council.
 
@@ -191,8 +247,27 @@ them live like a council run.
 
 - New flow alongside runs: `src/lib/discovery/` (store + orchestrator), routes under
   `/api/discoveries` (list/create, get, and `…/[id]/promote`), and pages at `/discover` and
-  `/discover/[id]`. The candidate scout/synthesis lives in `src/lib/research/`
-  (`scoutMarket`, `marketReadFor`, and `candidatesFor`).
+  `/discover/[id]`, with per-candidate reports under
+  `/discover/[id]/ideas/[candidateId]` and a local comparison surface at `/compare`.
+  The candidate scout/synthesis lives in `src/lib/research/` (`scoutMarket`, `marketReadFor`,
+  and `candidatesFor`).
+- Local memory lives next to runs/discoveries: `/profile` writes
+  `.ideaclyst/profile/profile.json` + `PROFILE.md`; `/library` writes
+  `.ideaclyst/library/library.json` + `LIBRARY.md`; `/trends` writes
+  `.ideaclyst/trends/trends.json` + `TRENDS.md`; validation and interview surfaces write
+  `.ideaclyst/validation/*` and `.ideaclyst/interviews/*`; decisions, insights, monitors,
+  exports, and source-lane settings write to `.ideaclyst/decisions`, `.ideaclyst/insights`,
+  `.ideaclyst/monitors`, `.ideaclyst/exports`, and `.ideaclyst/research`.
+- The top navigation stays lean: **Explore** (`/discover`, `/today`, `/trends`) and
+  **Workspace** (`/runs`, `/library`, `/validation`) are the only grouped menus. Deeper tools
+  such as Evidence, Compare, Decisions, Insights, Monitors, Interviews, Clusters, and Research
+  Settings are linked contextually from those pages.
+- Candidate keyword analysis lives behind `src/lib/research/keywords.ts`. It uses deterministic
+  offline estimates by default, can merge optional snapshot data from env, and reports the source
+  and freshness directly in the candidate report.
+- Live search now fans out through native Hacker News and Reddit JSON adapters plus the
+  configured web engine(s), dedupes results, and stores real search, recon, and readable page
+  extracts in a TTL-bound, size-capped on-disk cache under `.ideaclyst/research-cache`.
 - **Mode-gated and best-effort**, exactly like research: deterministic offline candidates in
   `mock`, live scouting + Claude synthesis in `cli`. It always returns candidates — even
   offline or when a source is blocked.
@@ -388,6 +463,12 @@ src/
   lib/
     agents/                   # runAgent dispatch + mock / claude / codex / prompts
     research/                 # vendored surfagent CDP modules + research/report seam
+    evidence/                 # source browser and freshness/confidence scoring
+    validation/               # validation board and analytics generated from reports
+    interviews/               # interview target list generated from buyer personas
+    clusters/                 # explainable local idea clustering
+    report-tools/             # PRD/funnel/persona/advisor/project generators
+    trends/                   # local trend radar built from discovery/report artifacts
     discovery/                # idea-discovery store + orchestrator
     runs/                     # types, on-disk store, final-plan section splitter
     orchestrator.ts           # the council pipeline (research Step 0 + 5 council steps)
@@ -423,6 +504,8 @@ src/
 | `IDEACLYST_RESEARCH_MAX_RESULTS` | `6` | Search results parsed per query |
 | `IDEACLYST_RESEARCH_MAX_SOURCES` | `3` | Pages deep-reconned |
 | `IDEACLYST_RESEARCH_IDLE_MS` | `120000` | Reap idle headless Chrome after |
+| `IDEACLYST_KEYWORD_SNAPSHOT_JSON` | _(empty)_ | Optional JSON array of keyword snapshot entries for report keyword intelligence |
+| `IDEACLYST_KEYWORD_SNAPSHOT_FRESHNESS` | _(empty)_ | Label shown beside snapshot-backed keyword estimates |
 
 Web research (Step 0) can also be **toggled off per run** in the idea form — handy when you
 just want the council without scouting.

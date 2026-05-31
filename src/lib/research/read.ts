@@ -6,6 +6,7 @@
 
 import CDP from "chrome-remote-interface";
 import { connectToTab, CDPClient } from "./connector";
+import { cachedJson } from "./cache";
 
 export interface ReadResult {
   title: string;
@@ -79,6 +80,18 @@ const READ_SCRIPT = `
 `;
 
 export async function readUrl(
+  url: string,
+  options: { port?: number; host?: string; waitMs?: number },
+): Promise<ReadResult> {
+  const { value } = await cachedJson<ReadResult>(
+    "read-url",
+    JSON.stringify({ url, waitMs: options.waitMs ?? 2000 }),
+    () => liveReadUrl(url, options),
+  );
+  return value;
+}
+
+async function liveReadUrl(
   url: string,
   options: { port?: number; host?: string; waitMs?: number },
 ): Promise<ReadResult> {

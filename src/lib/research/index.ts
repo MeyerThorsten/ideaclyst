@@ -15,6 +15,7 @@ import { reconUrl } from "./recon";
 import { readUrl } from "./read";
 import { webSearch } from "./search";
 import { isSafePublicUrl } from "./url-safety";
+import { listSourceLanes, renderLaneQuery } from "./source-lanes";
 import { marketResearchSynthesisPrompt, marketReadPrompt, candidatesPrompt } from "./synthesize";
 import {
   buildDiscoveryOpportunityMap,
@@ -278,6 +279,7 @@ interface DiscoveryQuery {
   query: string;
   sourceName: string;
   sourceType: ResearchSourceType;
+  cap?: number;
 }
 
 async function liveScout(queries: DiscoveryQuery[], deadline: number): Promise<DiscoveryScoutResult> {
@@ -303,7 +305,7 @@ async function liveScout(queries: DiscoveryQuery[], deadline: number): Promise<D
         notes.push(`search failed: ${q.sourceName}`);
         continue;
       }
-      for (const r of results.slice(0, maxSources)) {
+      for (const r of results.slice(0, q.cap ?? maxSources)) {
         if (Date.now() > deadline) break;
         if (seen.has(r.url)) continue;
         seen.add(r.url);
@@ -338,6 +340,7 @@ async function liveScout(queries: DiscoveryQuery[], deadline: number): Promise<D
             researchFindings: "",
             researchToolkit: "",
             founderBrief: "",
+            evolutionDiff: "",
             productStrategy: "",
             technicalArchitecture: "",
             claudeCritique: "",
@@ -347,6 +350,7 @@ async function liveScout(queries: DiscoveryQuery[], deadline: number): Promise<D
             mvpBacklog: "",
             risks: "",
             validationTests: "",
+            prd: "",
             nextPrompts: "",
             transcript: "",
           },
@@ -360,8 +364,27 @@ async function liveScout(queries: DiscoveryQuery[], deadline: number): Promise<D
   }
 }
 
-function discoveryQueries(brief: DiscoveryBrief): DiscoveryQuery[] {
+async function discoveryQueries(brief: DiscoveryBrief): Promise<DiscoveryQuery[]> {
   const d = brief.domain;
+  const configured = await listSourceLanes();
+  const enabled = configured.filter((lane) => lane.enabled);
+  if (enabled.length) {
+    const q: DiscoveryQuery[] = enabled.map((lane) => ({
+      query: renderLaneQuery(lane, d),
+      sourceName: lane.label,
+      sourceType: lane.sourceType,
+      cap: lane.cap,
+    }));
+    if (brief.goal === "commercial" && !q.some((item) => item.sourceType === "review" || item.sourceType === "pricing")) {
+      q.push({
+        query: `${d} pricing reviews alternatives market demand`,
+        sourceName: "Commercial review and pricing scan",
+        sourceType: "review",
+      });
+    }
+    return q;
+  }
+
   const q: DiscoveryQuery[] = [
     {
       query: `${d} problems people complain about`,
@@ -424,6 +447,7 @@ export async function scoutMarket(brief: DiscoveryBrief): Promise<DiscoveryScout
           researchFindings: "",
           researchToolkit: "",
           founderBrief: "",
+          evolutionDiff: "",
           productStrategy: "",
           technicalArchitecture: "",
           claudeCritique: "",
@@ -433,6 +457,7 @@ export async function scoutMarket(brief: DiscoveryBrief): Promise<DiscoveryScout
           mvpBacklog: "",
           risks: "",
           validationTests: "",
+          prd: "",
           nextPrompts: "",
           transcript: "",
         },
@@ -450,7 +475,7 @@ export async function scoutMarket(brief: DiscoveryBrief): Promise<DiscoveryScout
   try {
     // Deadline (not an abandoning race) so Chrome is always released cleanly.
     const deadline = Date.now() + num("IDEACLYST_RESEARCH_BUDGET_MS", 60_000);
-    const scout = await liveScout(discoveryQueries(brief), deadline);
+    const scout = await liveScout(await discoveryQueries(brief), deadline);
     // Only build an opportunity map from real sources (never fabricate from mock).
     return {
       ...scout,

@@ -1,5 +1,54 @@
 import Link from "next/link";
 
+const NAV_GROUPS = [
+  {
+    label: "Explore",
+    links: [
+      { href: "/discover", label: "Discover" },
+      { href: "/today", label: "Today" },
+      { href: "/trends", label: "Trends" },
+    ],
+  },
+  {
+    label: "Workspace",
+    links: [
+      { href: "/runs", label: "Sessions" },
+      { href: "/library", label: "Library" },
+      { href: "/validation", label: "Validation" },
+    ],
+  },
+];
+
+function NavMenu({
+  label,
+  links,
+}: {
+  label: string;
+  links: { href: string; label: string }[];
+}) {
+  return (
+    <details className="group relative">
+      <summary className="flex list-none items-center gap-1 rounded-md px-3 py-1.5 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 [&::-webkit-details-marker]:hidden">
+        <span>{label}</span>
+        <span aria-hidden="true" className="text-[10px] font-semibold text-zinc-400">
+          v
+        </span>
+      </summary>
+      <div className="absolute right-0 z-20 mt-2 min-w-44 rounded-lg border border-zinc-200 bg-white p-1 shadow-lg">
+        {links.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="block rounded-md px-3 py-2 text-sm text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+          >
+            {link.label}
+          </Link>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 /** Top nav + centered content frame shared by every page. */
 export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -14,18 +63,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               IdeaClyst
             </span>
           </Link>
-          <nav className="flex items-center gap-1 text-sm">
+          <nav className="flex flex-wrap items-center justify-end gap-2 text-sm">
+            {NAV_GROUPS.map((group) => (
+              <NavMenu key={group.label} label={group.label} links={group.links} />
+            ))}
             <Link
-              href="/discover"
+              href="/profile"
               className="rounded-md px-3 py-1.5 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
             >
-              Discover
-            </Link>
-            <Link
-              href="/runs"
-              className="rounded-md px-3 py-1.5 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
-            >
-              Sessions
+              Profile
             </Link>
             <Link
               href="/new"

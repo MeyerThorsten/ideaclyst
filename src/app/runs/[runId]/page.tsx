@@ -105,6 +105,7 @@ export default function RunDetailPage({
   const inProgress = run.status === "queued" || run.status === "running";
   const researchRefreshActive = run.currentStep === RESEARCH_REFRESH_STEP;
   const currentIndex = run.currentStep ? STEP_FLOW.indexOf(run.currentStep) : -1;
+  const elapsed = run.metrics?.elapsedMs ? `${Math.round(run.metrics.elapsedMs / 1000)}s` : "not recorded";
 
   return (
     <div className="space-y-6">
@@ -187,6 +188,27 @@ export default function RunDetailPage({
             Set <code className="rounded bg-rose-100 px-1">IDEACLYST_AGENT_MODE=mock</code> to
             use mock outputs.
           </p>
+        </div>
+      ) : null}
+
+      {run.metrics ? (
+        <div className="grid gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-zinc-200 bg-white p-4">
+            <div className="text-lg font-bold text-zinc-900">{elapsed}</div>
+            <div className="text-xs text-zinc-500">Elapsed</div>
+          </div>
+          <div className="rounded-xl border border-zinc-200 bg-white p-4">
+            <div className="text-lg font-bold text-zinc-900">{run.metrics.agentCalls}</div>
+            <div className="text-xs text-zinc-500">Agent calls</div>
+          </div>
+          <div className="rounded-xl border border-zinc-200 bg-white p-4">
+            <div className="text-lg font-bold text-zinc-900">{run.metrics.estimatedInputTokens + run.metrics.estimatedOutputTokens}</div>
+            <div className="text-xs text-zinc-500">Approx tokens</div>
+          </div>
+          <div className="rounded-xl border border-zinc-200 bg-white p-4">
+            <div className="text-lg font-bold text-zinc-900">${run.metrics.estimatedCostUsd.toFixed(4)}</div>
+            <div className="text-xs text-zinc-500">Approx cost</div>
+          </div>
         </div>
       ) : null}
 

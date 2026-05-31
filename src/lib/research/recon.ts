@@ -7,6 +7,7 @@
 
 import CDP from "chrome-remote-interface";
 import { connectToTab, CDPClient } from "./connector";
+import { cachedJson } from "./cache";
 
 export interface ReconResult {
   url: string;
@@ -302,6 +303,18 @@ const EXTRACTION_SCRIPT = `
 `;
 
 export async function reconUrl(
+  url: string,
+  options: { port?: number; host?: string; waitMs?: number },
+): Promise<ReconResult> {
+  const { value } = await cachedJson<ReconResult>(
+    "recon-url",
+    JSON.stringify({ url, waitMs: options.waitMs ?? 2000 }),
+    () => liveReconUrl(url, options),
+  );
+  return value;
+}
+
+async function liveReconUrl(
   url: string,
   options: { port?: number; host?: string; waitMs?: number },
 ): Promise<ReconResult> {

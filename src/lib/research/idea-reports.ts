@@ -16,11 +16,10 @@ import {
   DiscoveryBrief,
   ExecutionChannel,
   ExecutionPlanInsight,
+  ExistingProductMatch,
   FrameworkInsights,
   IdeaCandidate,
   InsightScore,
-  KeywordAnalysis,
-  KeywordInsight,
   MarketGapInsight,
   MarketMatrixInsight,
   ProofSignal,
@@ -32,6 +31,7 @@ import {
   WhyNowFactor,
   FounderFitInsight,
 } from "./types";
+import { keywordAnalysisFor } from "./keywords";
 
 const CAPACITY_LABELS: Record<string, string> = {
   "solo-pro": "solo experienced founder",
@@ -57,28 +57,63 @@ function insight(label: string, score: number, detail: string): InsightScore {
   return { label, score: safeScore, rating: rating(safeScore), detail };
 }
 
-function seedFor(text: string): number {
-  return Array.from(text).reduce((sum, char) => sum + char.charCodeAt(0), 0);
-}
-
 function titleCase(text: string): string {
-  return text
+  return (text || "")
     .split(/\s+/)
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 }
 
-function words(text: string): string[] {
-  return Array.from(
-    new Set(
-      text
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, " ")
-        .split(/\s+/)
-        .filter((w) => w.length > 2 && !["the", "and", "for", "with", "that", "this", "from"].includes(w)),
-    ),
+function tokens(text: string): string[] {
+  return Array.from(new Set(
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(/\s+/)
+      .filter((word) => word.length > 3 && !["with", "that", "from", "this", "tool", "tools", "apps"].includes(word)),
+  )).slice(0, 12);
+}
+
+export function existingProductMatches(
+  candidate: IdeaCandidate,
+  sources: ResearchSource[],
+): ExistingProductMatch[] {
+  const titleTokens = tokens(candidate.title);
+  const ideaTokens = tokens(candidate.idea);
+  const allTokens = new Set([...titleTokens, ...ideaTokens]);
+  const productLike = sources.filter((source) =>
+    ["competitor", "launch", "code", "review", "pricing"].includes(source.sourceType || "") ||
+    /producthunt|github|g2|capterra|alternative|pricing|launch/i.test(`${source.url} ${source.title} ${source.sourceName}`),
   );
+  return productLike
+    .map((source) => {
+      const haystack = `${source.title} ${source.summary} ${source.url}`.toLowerCase();
+      const hits = Array.from(allTokens).filter((token) => haystack.includes(token));
+      const strong = hits.length >= Math.min(3, Math.max(2, titleTokens.length));
+      return {
+        title: source.title || source.url,
+        url: source.url,
+        sourceName: source.sourceName || "Source",
+        sourceType: source.sourceType || "unknown" as const,
+        strength: strong ? "strong" as const : "possible" as const,
+        rationale: hits.length
+          ? `Matched ${hits.slice(0, 5).join(", ")} against the candidate wedge.`
+          : "Same source lane suggests an adjacent product or alternative.",
+        _hits: hits.length,
+      };
+    })
+    .filter((match) => match._hits > 0 || match.sourceType !== "search")
+    .sort((a, b) => Number(b.strength === "strong") - Number(a.strength === "strong") || b._hits - a._hits)
+    .slice(0, 6)
+    .map((match) => ({
+      title: match.title,
+      url: match.url,
+      sourceName: match.sourceName,
+      sourceType: match.sourceType,
+      strength: match.strength,
+      rationale: match.rationale,
+    }));
 }
 
 function firstSource(sources: ResearchSource[], types: ResearchSourceType[]): ResearchSource | undefined {
@@ -459,37 +494,6 @@ function communitySignals(sources: ResearchSource[], brief: DiscoveryBrief): Com
   ];
 }
 
-function keyword(keyword: string, base: number): KeywordInsight {
-  const seed = seedFor(keyword) + base;
-  const volume = seed % 3 === 0 ? `${((seed % 90) + 10).toFixed(0)}.0K` : `${((seed % 900) + 100).toFixed(0)}`;
-  const growth = seed % 4 === 0 ? `+${(seed % 400) + 20}%` : seed % 5 === 0 ? "flat" : `+${(seed % 90) + 5}%`;
-  const competition: KeywordInsight["competition"] = seed % 5 === 0 ? "high" : seed % 3 === 0 ? "medium" : "low";
-  return { keyword, volume, growth, competition };
-}
-
-function keywordAnalysis(candidate: IdeaCandidate, brief: DiscoveryBrief): KeywordAnalysis {
-  const ws = words(`${brief.domain} ${candidate.title} ${candidate.targetCustomer || ""}`).slice(0, 8);
-  const baseTopic = ws.slice(0, 3).join(" ") || brief.domain;
-  const terms = [
-    `${baseTopic} software`,
-    `${baseTopic} template`,
-    `${baseTopic} automation`,
-    `${baseTopic} compliance`,
-    `${baseTopic} alternatives`,
-    `${baseTopic} dashboard`,
-    `${baseTopic} workflow`,
-    `${baseTopic} pricing`,
-  ];
-  const insights = terms.map((term, i) => keyword(term, i * 17));
-  return {
-    summary:
-      "Directional keyword map derived from the discovered topic. Validate with a real keyword tool before treating volumes as market facts.",
-    fastestGrowing: insights.slice(0, 3),
-    highestVolume: insights.slice(3, 6),
-    mostRelevant: [insights[0], insights[2], insights[6]],
-  };
-}
-
 function founderFit(candidate: IdeaCandidate, brief: DiscoveryBrief): FounderFitInsight {
   const c = confidenceFor(candidate);
   const capacityBoost = brief.capacity === "team" ? 2 : brief.capacity === "ai-assisted" ? 1 : 0;
@@ -563,6 +567,7 @@ export function buildCandidateInsightReport(
           sourceName: "Candidate source",
         }]
       : [];
+  const products = existingProductMatches(candidate, sourceList);
   return {
     generatedAt: new Date().toISOString(),
     oneLine: `${candidate.title} should be validated as a narrow first-win workflow for ${candidate.targetCustomer || brief.domain}.`,
@@ -575,7 +580,7 @@ export function buildCandidateInsightReport(
     executionPlan: executionPlan(candidate, brief, sourceList),
     frameworks: frameworks(candidate, brief),
     communitySignals: communitySignals(sourceList, brief),
-    keywordAnalysis: keywordAnalysis(candidate, brief),
+    keywordAnalysis: keywordAnalysisFor(candidate, brief),
     founderFit: founderFit(candidate, brief),
     roast: roast(candidate),
     buildActions: [
@@ -583,6 +588,7 @@ export function buildCandidateInsightReport(
       "Run the lead magnet and first-win demo tests.",
       "Promote to council once the wedge survives interviews or paid-pilot outreach.",
     ],
+    existingProducts: products,
     sources: sourceList.slice(0, 12),
   };
 }
@@ -621,6 +627,11 @@ export function renderCandidateInsightReportMarkdown(candidate: IdeaCandidate): 
     "## Proof and signals",
     ...r.proofSignals.map((signal) => `- **${signal.category}: ${signal.score}/10** - ${signal.title}: ${signal.detail}`),
     "",
+    "## Existing product check",
+    ...(r.existingProducts?.length
+      ? r.existingProducts.map((match) => `- **${match.strength}:** [${match.title}](${match.url}) - ${match.rationale}`)
+      : ["- No source-backed product match was recorded. Treat this as unknown, not proof of novelty."]),
+    "",
     "## Market gap",
     "### Underserved segments",
     ...r.marketGap.underservedSegments.map((item) => `- ${item}`),
@@ -658,6 +669,116 @@ export function renderCandidateInsightReportMarkdown(candidate: IdeaCandidate): 
     "## Roast",
     r.roast.verdict,
     ...r.roast.blindSpots.map((spot) => `- ${spot}`),
+    "",
+  ];
+  return lines.join("\n");
+}
+
+export function renderCandidateOnePagerMarkdown(candidate: IdeaCandidate): string {
+  if (!candidate.report) return "";
+  const r = candidate.report;
+  const coreOffer = r.valueLadder.find((stage) => stage.stage === "core");
+  const bestScore = r.scores[0]
+    ? r.scores.reduce((best, score) => (score.score > best.score ? score : best), r.scores[0])
+    : undefined;
+  const riskiestScore = r.scores[0]
+    ? r.scores.reduce((worst, score) => (score.score < worst.score ? score : worst), r.scores[0])
+    : undefined;
+  const lines: string[] = [
+    `# One-page idea brief - ${candidate.title}`,
+    "",
+    "## Thesis",
+    r.oneLine,
+    "",
+    "## Best reason to care",
+    bestScore ? `**${bestScore.label}: ${bestScore.score}/10.** ${bestScore.detail}` : candidate.signal || candidate.idea,
+    "",
+    "## Biggest thing to prove",
+    riskiestScore ? `**${riskiestScore.label}: ${riskiestScore.score}/10.** ${riskiestScore.detail}` : candidate.risk || "Validate demand and budget before building broadly.",
+    "",
+    "## Buyer and offer",
+    `- Buyer: ${candidate.targetCustomer || r.frameworks.categorization.target}`,
+    `- Core offer: ${coreOffer ? `${coreOffer.offer} (${coreOffer.price})` : "Focused SaaS wedge"}`,
+    `- Initial offer: ${r.executionPlan.initialOffer}`,
+    `- Go-to-market: ${r.businessFit.goToMarket}`,
+    "",
+    "## Scorecard",
+    ...r.scores.map((score) => `- ${score.label}: ${score.score}/10 (${score.rating})`),
+    "",
+    "## First validation moves",
+    ...r.executionPlan.nextActions.slice(0, 3).map((item) => `- ${item}`),
+    "",
+    "## Roast verdict",
+    r.roast.verdict,
+    "",
+  ];
+  return lines.join("\n");
+}
+
+export function renderCandidateBuildPrompt(candidate: IdeaCandidate): string {
+  if (!candidate.report) return "";
+  const r = candidate.report;
+  const coreOffer = r.valueLadder.find((stage) => stage.stage === "core");
+  const lines: string[] = [
+    "# Claude Code implementation prompt",
+    "",
+    "You are working inside the IdeaClyst repository. Build only the feature described below. Preserve local-first disk persistence, best-effort research behavior, and the existing mock/cli mode seams.",
+    "",
+    `## Idea to develop`,
+    `Title: ${candidate.title}`,
+    `Thesis: ${r.oneLine}`,
+    `Buyer: ${candidate.targetCustomer || r.frameworks.categorization.target}`,
+    `Core offer: ${coreOffer ? `${coreOffer.offer} (${coreOffer.price})` : r.executionPlan.initialOffer}`,
+    `MVP approach: ${r.executionPlan.mvpApproach}`,
+    "",
+    "## Evidence to preserve",
+    ...r.proofSignals.slice(0, 4).map((signal) => `- ${signal.category}: ${signal.title} - ${signal.detail}`),
+    "",
+    "## Build scope",
+    ...r.executionPlan.nextActions.map((item) => `- ${item}`),
+    "",
+    "## Avoid",
+    ...r.roast.blindSpots.map((item) => `- ${item}`),
+    "",
+    "## Acceptance criteria",
+    "- The implementation is scoped to the selected idea and does not change unrelated flows.",
+    "- New UI works in mock mode without external services.",
+    "- Any persisted state is written under `.ideaclyst/` or another existing local-first store.",
+    "- Documentation is updated for the new feature.",
+    "- `npm run typecheck` and `npm run lint` stay clean.",
+    "",
+  ];
+  return lines.join("\n");
+}
+
+export function renderCandidateReviewPrompt(candidate: IdeaCandidate): string {
+  if (!candidate.report) return "";
+  const r = candidate.report;
+  const lines: string[] = [
+    "# Claude Code review-only prompt",
+    "",
+    "You are reviewing the IdeaClyst repository. Do not edit files, do not open pull requests, and do not make commits. Review only the feature work implied by this idea report.",
+    "",
+    `## Review target`,
+    `Title: ${candidate.title}`,
+    `Thesis: ${r.oneLine}`,
+    `Buyer: ${candidate.targetCustomer || r.frameworks.categorization.target}`,
+    "",
+    "## What the feature is supposed to protect",
+    "- Local-first persistence: disk remains the source of truth.",
+    "- Research and discovery remain best-effort and never fail the run because Chrome, scouting, or report synthesis failed.",
+    "- Scraped web content remains treated as untrusted data in prompts.",
+    "- CLI calls keep using safe argument arrays and stdin.",
+    "",
+    "## Review checklist",
+    "- Look for correctness bugs, async error paths, and persistence merge/write mistakes.",
+    "- Check resource lifecycle paths, especially browser tabs, timers, and cleanup in failures.",
+    "- Check API input validation and unsafe path usage.",
+    "- Verify the feature matches the report scope and does not leak mode-aware logic outside the intended seams.",
+    "- Run or request `npm run typecheck` and `npm run lint`.",
+    "",
+    "## Report context",
+    ...r.scores.map((score) => `- ${score.label}: ${score.score}/10 (${score.rating}) - ${score.detail}`),
     "",
   ];
   return lines.join("\n");

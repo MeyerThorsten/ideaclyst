@@ -9,6 +9,8 @@ import {
   DiscoveryGoal,
   DiscoveryCapacity,
 } from "@/lib/discovery/types";
+import { RESEARCH_PRESETS } from "@/lib/research/presets";
+import { DiscoverySuggestion } from "@/lib/discovery/suggestions";
 
 const GOAL_LABELS: Record<DiscoveryGoal, string> = {
   commercial: "Commercial product — something people pay for",
@@ -28,12 +30,23 @@ const labelCls = "block text-sm font-medium text-zinc-800";
 const inputCls =
   "mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
 
-export default function DiscoveryForm() {
+export default function DiscoveryForm({
+  initialDomain = "",
+  initialCapacity = "ai-assisted",
+  profileContext = "",
+  suggestions = [],
+}: {
+  initialDomain?: string;
+  initialCapacity?: DiscoveryCapacity;
+  profileContext?: string;
+  suggestions?: DiscoverySuggestion[];
+}) {
   const router = useRouter();
-  const [domain, setDomain] = useState("");
+  const [domain, setDomain] = useState(initialDomain);
   const [goal, setGoal] = useState<DiscoveryGoal>("commercial");
-  const [capacity, setCapacity] = useState<DiscoveryCapacity>("ai-assisted");
-  const [constraints, setConstraints] = useState("");
+  const [capacity, setCapacity] = useState<DiscoveryCapacity>(initialCapacity);
+  const [preset, setPreset] = useState("");
+  const [constraints, setConstraints] = useState(profileContext);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +71,28 @@ export default function DiscoveryForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {suggestions.length ? (
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+          <div className="text-sm font-semibold text-zinc-900">Suggested discovery filters</div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {suggestions.map((suggestion) => (
+              <button
+                key={suggestion.id}
+                type="button"
+                onClick={() => {
+                  setDomain(suggestion.domain);
+                  setConstraints((current) => [current, suggestion.constraints].filter(Boolean).join("\n"));
+                }}
+                className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-left text-sm transition hover:bg-white"
+              >
+                <span className="font-semibold text-zinc-900">{suggestion.label}</span>
+                <span className="mt-1 block text-xs leading-relaxed text-zinc-500">{suggestion.rationale}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div>
         <label htmlFor="domain" className={labelCls}>
           Market or space <span className="text-rose-500">*</span>
@@ -113,6 +148,33 @@ export default function DiscoveryForm() {
       </div>
 
       <div>
+        <label htmlFor="preset" className={labelCls}>
+          Research preset <span className="text-zinc-400">(optional)</span>
+        </label>
+        <select
+          id="preset"
+          className={inputCls}
+          value={preset}
+          onChange={(e) => {
+            const value = e.target.value;
+            setPreset(value);
+            const selected = RESEARCH_PRESETS.find((item) => item.id === value);
+            if (selected) {
+              setConstraints((current) => [current, `Preset: ${selected.label}. ${selected.notes}`].filter(Boolean).join(" "));
+            }
+          }}
+        >
+          <option value="">Default source lanes</option>
+          {RESEARCH_PRESETS.map((item) => (
+            <option key={item.id} value={item.id}>{item.label}</option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-zinc-500">
+          Presets add inspectable context to the scout brief without blocking manual input.
+        </p>
+      </div>
+
+      <div>
         <label htmlFor="constraints" className={labelCls}>
           Constraints / notes <span className="text-zinc-400">(optional)</span>
         </label>
@@ -123,6 +185,11 @@ export default function DiscoveryForm() {
           value={constraints}
           onChange={(e) => setConstraints(e.target.value)}
         />
+        {profileContext ? (
+          <p className="mt-1 text-xs text-zinc-500">
+            Prefilled from your founder profile. Edit it freely for this discovery.
+          </p>
+        ) : null}
       </div>
 
       {error ? (

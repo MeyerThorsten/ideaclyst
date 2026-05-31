@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { IdeaCandidate } from "@/lib/research/types";
+import SaveToLibraryButton from "./save-to-library-button";
 
 const EFFORT_CLS: Record<string, string> = {
   low: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -37,6 +38,7 @@ export default function CandidateCard({
   const router = useRouter();
   const [promoting, setPromoting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const score = candidate.confidence?.overall;
 
   async function promote() {
     setPromoting(true);
@@ -114,6 +116,24 @@ export default function CandidateCard({
         </div>
       ) : null}
 
+      {candidate.forYou ? (
+        <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/70 p-3">
+          <div className="flex items-center justify-between text-xs font-semibold text-indigo-900">
+            <span>For you</span>
+            <span>{candidate.forYou.score}/100</span>
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-indigo-800">{candidate.forYou.reasons[0]}</p>
+        </div>
+      ) : null}
+
+      {candidate.report?.existingProducts?.length ? (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          {candidate.report.existingProducts.filter((match) => match.strength === "strong").length
+            ? "Strong existing-product match found."
+            : "Possible adjacent products found."}
+        </div>
+      ) : null}
+
       <dl className="mt-3 space-y-1.5 text-xs text-zinc-500">
         {candidate.targetCustomer ? (
           <div><dt className="inline font-medium text-zinc-600">Who pays: </dt><dd className="inline">{candidate.targetCustomer}</dd></div>
@@ -144,6 +164,27 @@ export default function CandidateCard({
       ) : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-2 pt-1">
+        <SaveToLibraryButton
+          item={{
+            id: `candidate:${discoveryId}:${candidate.id}`,
+            type: "candidate",
+            title: candidate.title,
+            description: candidate.idea,
+            href: `/discover/${discoveryId}/ideas/${candidate.id}`,
+            sourceId: candidate.id,
+            parentId: discoveryId,
+            score,
+            tags: [
+              candidate.commercial ? `commercial:${candidate.commercial}` : "",
+              candidate.buildEffort ? `build:${candidate.buildEffort}` : "",
+              candidate.targetCustomer || "",
+            ].filter(Boolean),
+            metadata: {
+              sourceUrl: candidate.sourceUrl || null,
+              risk: candidate.risk || null,
+            },
+          }}
+        />
         <Link
           href={`/discover/${discoveryId}/ideas/${candidate.id}`}
           className="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"

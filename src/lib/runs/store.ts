@@ -81,6 +81,12 @@ export async function createRun(input: CreateRunInput): Promise<Run> {
     status: "queued",
     createdAt: now,
     updatedAt: now,
+    metrics: {
+      agentCalls: 0,
+      estimatedInputTokens: 0,
+      estimatedOutputTokens: 0,
+      estimatedCostUsd: 0,
+    },
     outputs: emptyOutputs(),
   };
 

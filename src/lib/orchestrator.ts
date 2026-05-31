@@ -8,7 +8,7 @@
 
 import { getRun, updateRun, writeRunFile } from "./runs/store";
 import { Run, RunOutputs } from "./runs/types";
-import { runAgent, CouncilStepKey } from "./agents";
+import { agentMode, runAgent, CouncilStepKey } from "./agents";
 import {
   productStrategyPrompt,
   technicalArchitecturePrompt,
@@ -17,7 +17,10 @@ import {
   finalSynthesisPrompt,
 } from "./agents/prompts";
 import { splitFinalPlan } from "./runs/markdown";
+import { renderRunPrd } from "./runs/prd";
 import { runMarketResearch } from "./research";
+import { markdownDiff } from "./research/diff";
+import { compactCouncilMemory } from "./memory/store";
 import {
   renderCompetitorMatrixMarkdown,
   renderCompetitorWatchMarkdown,
@@ -43,6 +46,7 @@ async function researchOutputsForRun(run: Run): Promise<Partial<RunOutputs>> {
       researchFindings: "_Web research was turned off for this run._",
       researchToolkit: "",
       founderBrief: "",
+      evolutionDiff: "",
     };
   }
 
@@ -80,8 +84,13 @@ async function finishRunResearchRefresh(runId: string): Promise<Run | null> {
   if (!run) return null;
   try {
     const outputs = await researchOutputsForRun({ ...run, includeResearch: true });
+    const evolutionDiff = [
+      markdownDiff(run.outputs.researchFindings, outputs.researchFindings || "", "Research findings"),
+      markdownDiff(run.outputs.researchToolkit, outputs.researchToolkit || "", "Research toolkit"),
+    ].join("\n\n");
     await writeRunFile(runId, "RESEARCH_FINDINGS.md", outputs.researchFindings || "");
-    return await updateRun(runId, { outputs, currentStep: undefined, error: undefined });
+    await writeRunFile(runId, "EVOLUTION_DIFF.md", evolutionDiff);
+    return await updateRun(runId, { outputs: { ...outputs, evolutionDiff }, currentStep: undefined, error: undefined });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error refreshing research";
     return await updateRun(runId, { error: message, currentStep: undefined });
@@ -116,10 +125,25 @@ export async function startRun(runId: string): Promise<void> {
   let run = await getRun(runId);
   if (!run) return;
   if (run.status !== "queued") return; // already started/finished
+  const startedAt = new Date();
+  let agentCalls = 0;
+  let estimatedInputTokens = 0;
+  let estimatedOutputTokens = 0;
 
   try {
-    run = await updateRun(runId, { status: "running", currentStep: "Market research" });
+    run = await updateRun(runId, {
+      status: "running",
+      currentStep: "Market research",
+      metrics: {
+        startedAt: startedAt.toISOString(),
+        agentCalls: 0,
+        estimatedInputTokens: 0,
+        estimatedOutputTokens: 0,
+        estimatedCostUsd: 0,
+      },
+    });
     let transcript = `# Council transcript — ${run.title}\n`;
+    const councilMemory = await compactCouncilMemory();
 
     const persistStep = async (
       patch: Partial<RunOutputs>,
@@ -135,8 +159,23 @@ export async function startRun(runId: string): Promise<void> {
       });
     };
 
-    const call = (agent: "claude" | "codex", prompt: string, stepKey: CouncilStepKey) =>
-      runAgent(agent, prompt, { run: run as Run, stepKey });
+    const call = async (agent: "claude" | "codex", prompt: string, stepKey: CouncilStepKey) => {
+      const output = await runAgent(agent, prompt, { run: run as Run, stepKey });
+      agentCalls += 1;
+      estimatedInputTokens += Math.ceil(prompt.length / 4);
+      estimatedOutputTokens += Math.ceil(output.length / 4);
+      await updateRun(runId, {
+        metrics: {
+          startedAt: startedAt.toISOString(),
+          elapsedMs: Date.now() - startedAt.getTime(),
+          agentCalls,
+          estimatedInputTokens,
+          estimatedOutputTokens,
+          estimatedCostUsd: agentMode() === "mock" ? 0 : Number(((estimatedInputTokens + estimatedOutputTokens) * 0.000003).toFixed(4)),
+        },
+      }).catch(() => {});
+      return output;
+    };
 
     // Step 0 — Web research (best-effort; never throws). Grounds every later step.
     // Skipped (with a note) when the founder turns it off in the form.
@@ -153,7 +192,7 @@ export async function startRun(runId: string): Promise<void> {
     // Step 1 — Claude: product strategy
     const productStrategy = await call(
       "claude",
-      productStrategyPrompt(run, researchFindings),
+      productStrategyPrompt(run, researchFindings, councilMemory),
       "productStrategy",
     );
     await writeRunFile(runId, "PRODUCT_STRATEGY.md", productStrategy);
@@ -167,7 +206,7 @@ export async function startRun(runId: string): Promise<void> {
     // Step 2 — Codex: technical architecture (sees Claude's strategy)
     const technicalArchitecture = await call(
       "codex",
-      technicalArchitecturePrompt(run, productStrategy, researchFindings),
+      technicalArchitecturePrompt(run, productStrategy, researchFindings, councilMemory),
       "technicalArchitecture",
     );
     await writeRunFile(runId, "TECHNICAL_ARCHITECTURE.md", technicalArchitecture);
@@ -181,7 +220,7 @@ export async function startRun(runId: string): Promise<void> {
     // Step 3 — Claude: critique of Codex's plan
     const claudeCritique = await call(
       "claude",
-      claudeCritiquePrompt(run, technicalArchitecture, researchFindings),
+      claudeCritiquePrompt(run, technicalArchitecture, researchFindings, councilMemory),
       "claudeCritique",
     );
     run = await persistStep(
@@ -194,7 +233,7 @@ export async function startRun(runId: string): Promise<void> {
     // Step 4 — Codex: critique of Claude's strategy
     const codexCritique = await call(
       "codex",
-      codexCritiquePrompt(run, productStrategy, researchFindings),
+      codexCritiquePrompt(run, productStrategy, researchFindings, councilMemory),
       "codexCritique",
     );
     run = await persistStep(
@@ -222,6 +261,7 @@ export async function startRun(runId: string): Promise<void> {
           codexCritique,
         },
         researchFindings,
+        councilMemory,
       ),
       "finalPlan",
     );
@@ -230,6 +270,20 @@ export async function startRun(runId: string): Promise<void> {
     const sections = splitFinalPlan(finalPlan);
     // Fallback: if a section didn't parse out, the summary shows the whole plan.
     const summary = sections.summary || finalPlan;
+    const prd = renderRunPrd({
+      ...run,
+      outputs: {
+        ...run.outputs,
+        finalPlan,
+        summary,
+        mvpBacklog: sections.mvpBacklog,
+        risks: sections.risks,
+        validationTests: sections.validationTests,
+        nextPrompts: sections.nextPrompts,
+        transcript,
+      },
+    });
+    await writeRunFile(runId, "PRD.md", prd);
 
     transcript += transcriptBlock("Claude — Final Synthesis", finalPlan);
     await writeRunFile(runId, "TRANSCRIPT.md", transcript);
@@ -237,12 +291,22 @@ export async function startRun(runId: string): Promise<void> {
     await updateRun(runId, {
       status: "completed",
       currentStep: undefined,
+      metrics: {
+        startedAt: startedAt.toISOString(),
+        completedAt: new Date().toISOString(),
+        elapsedMs: Date.now() - startedAt.getTime(),
+        agentCalls,
+        estimatedInputTokens,
+        estimatedOutputTokens,
+        estimatedCostUsd: agentMode() === "mock" ? 0 : Number(((estimatedInputTokens + estimatedOutputTokens) * 0.000003).toFixed(4)),
+      },
       outputs: {
         finalPlan,
         summary,
         mvpBacklog: sections.mvpBacklog,
         risks: sections.risks,
         validationTests: sections.validationTests,
+        prd,
         nextPrompts: sections.nextPrompts,
         transcript,
       },

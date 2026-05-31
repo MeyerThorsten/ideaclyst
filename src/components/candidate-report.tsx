@@ -4,7 +4,24 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import {
+  renderCandidateBuildPrompt,
+  renderCandidateInsightReportMarkdown,
+  renderCandidateOnePagerMarkdown,
+  renderCandidateReviewPrompt,
+} from "@/lib/research/idea-reports";
+import { confidenceLabel, freshnessLabel, isSyntheticSource, sourceConfidence } from "@/lib/evidence/scoring";
+import { communityDeepDive } from "@/lib/research/community";
 import { CandidateInsightReport, IdeaCandidate, InsightScore } from "@/lib/research/types";
+import SaveToLibraryButton from "./save-to-library-button";
+
+const COMPARE_STORAGE_KEY = "ideaclyst-compare-v1";
+
+interface CompareEntry {
+  discoveryId: string;
+  candidate: IdeaCandidate;
+  addedAt: string;
+}
 
 function ScoreCard({ score }: { score: InsightScore }) {
   return (
@@ -61,14 +78,22 @@ export default function CandidateReport({
   discoveryId,
   candidate,
   report,
+  profileNotes = [],
 }: {
   discoveryId: string;
   candidate: IdeaCandidate;
   report: CandidateInsightReport;
+  profileNotes?: string[];
 }) {
   const router = useRouter();
   const [promoting, setPromoting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const candidateWithReport = { ...candidate, report };
+  const opportunityScore = report.scores.find((score) => score.label === "Opportunity")?.score;
+  const keywordSource = report.keywordAnalysis.source || "legacy report artifact";
+  const keywordFreshness = report.keywordAnalysis.freshness || "not recorded in this saved report";
+  const community = communityDeepDive(candidate, report, report.sources);
 
   async function promote() {
     setPromoting(true);
@@ -88,6 +113,81 @@ export default function CandidateReport({
     }
   }
 
+  async function copyText(label: string, text: string) {
+    setNotice(null);
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice(`${label} copied`);
+    } catch {
+      setNotice("Copy failed");
+    }
+  }
+
+  async function logDecision(type: "promoted" | "parked" | "killed" | "validated") {
+    setNotice(null);
+    try {
+      const res = await fetch("/api/decisions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          title: candidate.title,
+          href: `/discover/${discoveryId}/ideas/${candidate.id}`,
+          evidence: report.proofSignals[0]?.detail || report.oneLine,
+          rationale: `${type} from candidate report. ${report.roast.verdict}`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to log decision");
+      setNotice(`${type} decision logged`);
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Decision log failed");
+    }
+  }
+
+  async function refreshReport() {
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/discoveries/${discoveryId}/reports`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidateId: candidate.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to refresh report");
+      setNotice(`Report refreshed: ${data.diff?.summary || "version saved"}`);
+      router.refresh();
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Report refresh failed");
+    }
+  }
+
+  function readCompareEntries(): CompareEntry[] {
+    try {
+      const raw = localStorage.getItem(COMPARE_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((entry): entry is CompareEntry => {
+        if (!entry || typeof entry !== "object") return false;
+        const value = entry as Partial<CompareEntry>;
+        return typeof value.discoveryId === "string" && Boolean(value.candidate?.id);
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  function addToCompare() {
+    const current = readCompareEntries();
+    const next = [
+      { discoveryId, candidate: candidateWithReport, addedAt: new Date().toISOString() },
+      ...current.filter((entry) => entry.discoveryId !== discoveryId || entry.candidate.id !== candidate.id),
+    ].slice(0, 8);
+    localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(next, null, 2));
+    setNotice("Added to compare");
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -101,6 +201,36 @@ export default function CandidateReport({
             <p className="mt-3 text-sm leading-relaxed text-zinc-600">{report.oneLine}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <SaveToLibraryButton
+              item={{
+                id: `report:${discoveryId}:${candidate.id}`,
+                type: "report",
+                title: candidate.title,
+                description: report.oneLine,
+                href: `/discover/${discoveryId}/ideas/${candidate.id}`,
+                sourceId: candidate.id,
+                parentId: discoveryId,
+                score: opportunityScore ? opportunityScore * 10 : candidate.confidence?.overall,
+                tags: [
+                  "full report",
+                  candidate.commercial ? `commercial:${candidate.commercial}` : "",
+                  candidate.buildEffort ? `build:${candidate.buildEffort}` : "",
+                  candidate.targetCustomer || "",
+                ].filter(Boolean),
+                metadata: {
+                  generatedAt: report.generatedAt,
+                  founderFit: report.founderFit.score,
+                  roast: report.roast.verdict,
+                },
+              }}
+            />
+            <button
+              type="button"
+              onClick={addToCompare}
+              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
+            >
+              Add to compare
+            </button>
             <button
               type="button"
               onClick={promote}
@@ -110,9 +240,89 @@ export default function CandidateReport({
               {promoting ? "Convening..." : "Promote to council"}
             </button>
             {error ? <span className="text-xs text-rose-600">{error}</span> : null}
+            {notice ? <span className="text-xs text-emerald-700">{notice}</span> : null}
           </div>
         </div>
       </div>
+
+      <Section title="Exports & Handoff" eyebrow="Portable">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+          {[
+            ["Copy Markdown", renderCandidateInsightReportMarkdown(candidateWithReport)],
+            ["Copy JSON", JSON.stringify({ discoveryId, candidate: candidateWithReport, report, exportedAt: new Date().toISOString() }, null, 2)],
+            ["Copy One-Pager", renderCandidateOnePagerMarkdown(candidateWithReport)],
+            ["Copy Build Prompt", renderCandidateBuildPrompt(candidateWithReport)],
+            ["Copy Review Prompt", renderCandidateReviewPrompt(candidateWithReport)],
+          ].map(([label, text]) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => copyText(label, text)}
+              className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-left text-sm font-semibold text-zinc-900 transition hover:border-zinc-300 hover:bg-white"
+            >
+              {label}
+              <span className="mt-1 block text-xs font-normal leading-relaxed text-zinc-500">
+                {label === "Copy Build Prompt"
+                  ? "Implementation-ready Claude/Codex brief"
+                  : label === "Copy Review Prompt"
+                    ? "Review-only prompt with invariants"
+                    : "Portable report artifact"}
+              </span>
+            </button>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Build & Validate Workspaces" eyebrow="Next tools">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ["Funnel", `/discover/${discoveryId}/ideas/${candidate.id}/funnel`, "Landing copy, lead magnet, outreach, and first channel."],
+            ["Landing", `/landing/${discoveryId}/${candidate.id}`, "Rendered local landing page draft and validation CTA."],
+            ["Personas", `/discover/${discoveryId}/ideas/${candidate.id}/personas`, "Skeptical buyer simulations grounded in this report."],
+            ["Advisor", `/discover/${discoveryId}/ideas/${candidate.id}/chat`, "Report-grounded Q&A starters with unknowns labeled."],
+            ["Project", `/projects/${discoveryId}/${candidate.id}`, "MVP spec, tasks, validation sprint, and handoff packet."],
+            ["Share", `/discover/${discoveryId}/ideas/${candidate.id}/export`, "Self-contained local HTML packet."],
+            ["Versions", `/discover/${discoveryId}/ideas/${candidate.id}/versions`, "Report snapshots and regeneration diffs."],
+          ].map(([label, href, copy]) => (
+            <Link
+              key={label}
+              href={href}
+              className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm font-semibold text-zinc-900 transition hover:border-zinc-300 hover:bg-white"
+            >
+              {label}
+              <span className="mt-1 block text-xs font-normal leading-relaxed text-zinc-500">{copy}</span>
+            </Link>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Report Operations" eyebrow="Audit">
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={refreshReport} className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50">
+            Rerun report only
+          </button>
+          {(["promoted", "validated", "parked", "killed"] as const).map((type) => (
+            <button key={type} type="button" onClick={() => logDecision(type)} className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium capitalize text-zinc-700 transition hover:bg-zinc-50">
+              Log {type}
+            </button>
+          ))}
+          <Link href="/decisions" className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50">
+            View decision log
+          </Link>
+        </div>
+      </Section>
+
+      {profileNotes.length ? (
+        <Section title="Founder Profile Lens" eyebrow="Personal fit">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {profileNotes.map((note) => (
+              <div key={note} className="rounded-xl bg-zinc-50 p-4 text-sm leading-relaxed text-zinc-600 ring-1 ring-inset ring-zinc-200">
+                {note}
+              </div>
+            ))}
+          </div>
+        </Section>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {report.scores.map((score) => (
@@ -184,6 +394,24 @@ export default function CandidateReport({
           </div>
         </Section>
       </div>
+
+      <Section title="Already-Built Check" eyebrow="Competition">
+        {report.existingProducts?.length ? (
+          <div className="grid gap-2">
+            {report.existingProducts.map((match) => (
+              <a key={`${match.url}-${match.title}`} href={match.url} target="_blank" rel="noreferrer" className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50">
+                <span className="font-medium text-zinc-900">{match.title}</span>
+                <span className="ml-2 text-xs text-zinc-400">{match.strength} · {match.sourceName}</span>
+                <span className="mt-1 block text-xs text-zinc-500">{match.rationale}</span>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm leading-relaxed text-zinc-600">
+            No source-backed product match was recorded. Treat this as unknown rather than proof the idea is novel.
+          </p>
+        )}
+      </Section>
 
       <Section title="Market Gap" eyebrow="Positioning">
         <div className="grid gap-4 md:grid-cols-3">
@@ -274,11 +502,37 @@ export default function CandidateReport({
               </div>
             ))}
           </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div>
+              <h3 className="mb-2 text-sm font-semibold text-zinc-900">Repeated pain phrases</h3>
+              <Bullets items={community.repeatedPainPhrases} />
+            </div>
+            <div>
+              <h3 className="mb-2 text-sm font-semibold text-zinc-900">First-post scripts</h3>
+              <Bullets items={community.firstPostScripts} />
+            </div>
+            <div>
+              <h3 className="mb-2 text-sm font-semibold text-zinc-900">Communities</h3>
+              <Bullets items={community.communities.length ? community.communities : ["No source-backed communities recorded yet."]} />
+            </div>
+            <div>
+              <h3 className="mb-2 text-sm font-semibold text-zinc-900">Moderation constraints</h3>
+              <Bullets items={community.moderationConstraints} />
+            </div>
+          </div>
         </Section>
 
-        <Section title="Keyword Intelligence" eyebrow="Demand">
-          <p className="text-sm leading-relaxed text-zinc-600">{report.keywordAnalysis.summary}</p>
-          <div className="mt-4 grid gap-3">
+      <Section title="Keyword Intelligence" eyebrow="Demand">
+        <p className="text-sm leading-relaxed text-zinc-600">{report.keywordAnalysis.summary}</p>
+        <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-500">
+          <span className="rounded-full bg-zinc-100 px-2 py-1 ring-1 ring-inset ring-zinc-200">
+            Source: {keywordSource}
+          </span>
+          <span className="rounded-full bg-zinc-100 px-2 py-1 ring-1 ring-inset ring-zinc-200">
+            Freshness: {keywordFreshness}
+          </span>
+        </div>
+        <div className="mt-4 grid gap-3">
             {[
               ["Fastest growing", report.keywordAnalysis.fastestGrowing],
               ["Highest volume", report.keywordAnalysis.highestVolume],
@@ -325,7 +579,10 @@ export default function CandidateReport({
       {report.sources.length ? (
         <Section title="Sources" eyebrow="Evidence">
           <div className="grid gap-2">
-            {report.sources.map((source) => (
+            {report.sources.map((source) => {
+              const confidenceScore = sourceConfidence(source);
+              const synthetic = isSyntheticSource(source);
+              return (
               <a
                 key={`${source.url}-${source.title}`}
                 href={source.url}
@@ -335,8 +592,11 @@ export default function CandidateReport({
               >
                 <span className="font-medium text-zinc-900">{source.title || source.url}</span>
                 <span className="ml-2 text-xs text-zinc-400">{source.sourceType ? SOURCE_LABELS[source.sourceType] : "source"}</span>
+                <span className="ml-2 text-xs text-zinc-400">{confidenceLabel(confidenceScore)} · {freshnessLabel(report.generatedAt)}</span>
+                {synthetic ? <span className="ml-2 text-xs font-medium text-amber-700">synthetic/offline</span> : null}
               </a>
-            ))}
+              );
+            })}
           </div>
         </Section>
       ) : null}
@@ -355,4 +615,3 @@ const SOURCE_LABELS: Record<string, string> = {
   community: "Community",
   docs: "Docs",
 };
-

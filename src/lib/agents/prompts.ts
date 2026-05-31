@@ -35,8 +35,13 @@ function researchSection(research?: string): string {
   ].join("\n");
 }
 
+function memorySection(memory?: string): string {
+  if (!memory || !memory.trim()) return "";
+  return ["", memory.trim()].join("\n");
+}
+
 /** Step 1 — Claude as a skeptical SaaS founder / product strategist. */
-export function productStrategyPrompt(run: Run, research?: string): string {
+export function productStrategyPrompt(run: Run, research?: string, memory?: string): string {
   return [
     "You are a skeptical, experienced SaaS founder acting as product strategist.",
     "You have seen many ideas fail. Pressure-test this one and shape it into a",
@@ -47,6 +52,7 @@ export function productStrategyPrompt(run: Run, research?: string): string {
     "",
     "## Idea brief",
     brief(run),
+    memorySection(memory),
     researchSection(research),
     "",
     FORMAT_NOTE,
@@ -58,6 +64,7 @@ export function technicalArchitecturePrompt(
   run: Run,
   productStrategy: string,
   research?: string,
+  memory?: string,
 ): string {
   return [
     "You are a pragmatic CTO. Given the idea and the product strategy below, design",
@@ -68,6 +75,7 @@ export function technicalArchitecturePrompt(
     "",
     "## Idea brief",
     brief(run),
+    memorySection(memory),
     researchSection(research),
     "",
     "## Product strategy (from the strategist)",
@@ -82,6 +90,7 @@ export function claudeCritiquePrompt(
   run: Run,
   technicalArchitecture: string,
   research?: string,
+  memory?: string,
 ): string {
   return [
     "You are the skeptical founder again. Critique the CTO's technical architecture",
@@ -91,6 +100,7 @@ export function claudeCritiquePrompt(
     "",
     "## Idea brief",
     brief(run),
+    memorySection(memory),
     researchSection(research),
     "",
     "## Technical architecture (from the CTO)",
@@ -105,6 +115,7 @@ export function codexCritiquePrompt(
   run: Run,
   productStrategy: string,
   research?: string,
+  memory?: string,
 ): string {
   return [
     "You are the pragmatic CTO. Critique the product strategy below from an",
@@ -115,6 +126,7 @@ export function codexCritiquePrompt(
     "",
     "## Idea brief",
     brief(run),
+    memorySection(memory),
     researchSection(research),
     "",
     "## Product strategy (from the strategist)",
@@ -134,6 +146,7 @@ export function finalSynthesisPrompt(
     codexCritique: string;
   },
   research?: string,
+  memory?: string,
 ): string {
   return [
     "You are the lead synthesizer. Reconcile the strategy, architecture, and both",
@@ -156,6 +169,7 @@ export function finalSynthesisPrompt(
     "",
     "## Idea brief",
     brief(run),
+    memorySection(memory),
     researchSection(research),
     "",
     "## Product strategy",

@@ -3,6 +3,8 @@
 import { NextResponse } from "next/server";
 
 import { getDiscovery } from "@/lib/discovery/store";
+import { rankDiscoveryForProfile } from "@/lib/discovery/ranking";
+import { getFounderProfile } from "@/lib/profile/store";
 
 export async function GET(
   _request: Request,
@@ -13,5 +15,6 @@ export async function GET(
   if (!discovery) {
     return NextResponse.json({ error: "Discovery not found" }, { status: 404 });
   }
-  return NextResponse.json({ discovery });
+  const profile = await getFounderProfile();
+  return NextResponse.json({ discovery: rankDiscoveryForProfile(discovery, profile) });
 }
