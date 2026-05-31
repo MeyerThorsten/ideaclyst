@@ -94,6 +94,9 @@ MVP Backlog, Risks, Validation Tests, and ready-to-paste Next Prompts.
   **Workspace** (`/runs`, `/library`, `/compare`); `/profile` stays directly reachable.
 - **Evidence and validation workspaces** — source audit, validation board, analytics,
   interview CRM, and idea clusters are generated from local run/discovery/report data.
+- **Roadmap Intelligence** — read a [Threlmark](https://threlmark.com) project's roadmap and
+  generate scored, research-grounded feature / spin-off / service suggestions (live + strict),
+  then send the keepers back into Threlmark's Inbox. The data source is configured on `/settings`.
 
 ---
 
@@ -274,6 +277,32 @@ them live like a council run.
 - Each discovery persists to disk under `.ideaclyst/discoveries/<id>/` (`discovery.json` +
   `MARKET_READ.md`, `OPPORTUNITY_MAP.md`, `CANDIDATES.md`, and `CANDIDATE_REPORTS.md`); the
   discovery page polls just like a run.
+
+## Roadmap Intelligence — read a Threlmark roadmap, suggest what's next
+
+Where Discovery finds *new* ideas, **Roadmap Intelligence** (the `/roadmap` route) extends an
+*existing* product. It reads the roadmap of a [Threlmark](https://threlmark.com) project — a
+separate local-first roadmap manager — and proposes scored, research-grounded ways to grow it.
+
+- **Point at a project.** Threlmark projects are read from its data dir (`~/.threlmark` by
+  default) **read-only**, or via Threlmark's REST API. The data source (disk vs. REST, path,
+  base URL) is configured on the new `/settings` page; environment variables take precedence.
+- **Gap map first.** A deterministic coverage read — strong vs. thin/absent categories, done
+  vs. open, top open items by priority — frames the analysis before any model runs.
+- **Three research lanes.** *Features* (fill gaps), *spin-off products* (adjacency), and
+  *services* (productize) each run their own live web research and return suggestions scored on
+  the same `impact`/`evidence`/`fit`/`effort` axes as a roadmap item, each with a why-now and
+  **real source links**. **Live + strict only** — if no real sources are found, the lane shows
+  a clear notice instead of fabricating. You choose how many suggestions per lane.
+- **Review, then send.** Tick the keepers and **Send to Threlmark**: IdeaClyst writes flat
+  suggestion files into the project's `suggestions/` folder (the *only* place it ever writes to
+  Threlmark), which Threlmark's Inbox accepts into the roadmap (`source: "ideaclyst"`). A
+  target-project dropdown lets you cross-promote a suggestion into a *different* project.
+- Each analysis persists under `.ideaclyst/roadmap/<id>/` and the review page polls live, just
+  like a run. Suggestions carry provenance (kind, why-now, sources) that round-trips intact.
+
+Interop follows a small shared data contract, so two independent, local-first apps cooperate
+with no server required and no data ever leaving your disk.
 
 ## Request lifecycle
 
@@ -459,6 +488,10 @@ src/
     api/runs/route.ts         # GET list / POST create (+ fire council)
     api/runs/[runId]/route.ts # GET one
     api/runs/[runId]/research/route.ts # POST rerun research only
+    roadmap/page.tsx          # roadmap-intelligence: project picker + analysis review (polls)
+    settings/page.tsx         # Threlmark data-source config (disk/REST) + test connection
+    api/roadmap/route.ts      # GET Threlmark projects / POST create analysis (+ [id], [id]/send)
+    api/settings/route.ts     # GET/PUT settings, POST test-connection
   components/                 # app-shell, idea-form, result-tabs, candidate-report, …
   lib/
     agents/                   # runAgent dispatch + mock / claude / codex / prompts
@@ -470,6 +503,9 @@ src/
     report-tools/             # PRD/funnel/persona/advisor/project generators
     trends/                   # local trend radar built from discovery/report artifacts
     discovery/                # idea-discovery store + orchestrator
+    threlmark/                # read-only Threlmark reader + suggestion writer + disk/REST source
+    roadmap/                  # roadmap-intelligence analysis store + 3-lane orchestrator
+    settings/                 # app settings (.ideaclyst/settings.json) with env precedence
     runs/                     # types, on-disk store, final-plan section splitter
     orchestrator.ts           # the council pipeline (research Step 0 + 5 council steps)
     utils.ts                  # slug + lightweight markdown renderer
@@ -509,6 +545,16 @@ src/
 
 Web research (Step 0) can also be **toggled off per run** in the idea form — handy when you
 just want the council without scouting.
+
+**Roadmap Intelligence (Threlmark interop)** — where IdeaClyst reads Threlmark projects from;
+the `/settings` page edits these too, and environment variables take precedence:
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `IDEACLYST_ROADMAP_SOURCE` | _(settings / `disk`)_ | `disk` or `rest` data-access mode |
+| `THRELMARK_DATA_DIR` | `~/.threlmark` | Threlmark data root (disk source) |
+| `IDEACLYST_ROADMAP_DIR` | _(= `THRELMARK_DATA_DIR`)_ | Explicit path override for where to read projects |
+| `IDEACLYST_THRELMARK_API` | _(none)_ | Base URL for the REST source (e.g. `http://localhost:4789`) |
 
 ---
 
